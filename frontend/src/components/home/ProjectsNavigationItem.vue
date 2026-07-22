@@ -51,6 +51,11 @@
 					</span>
 				</div>
 				<span class="project-menu-title">{{ getProjectTitle(project) }}</span>
+				<ProgressRing
+					v-if="project.totalTaskCount > 0"
+					class="project-menu-progress"
+					:percent="project.doneTaskCount / project.totalTaskCount"
+				/>
 			</BaseButton>
 			<BaseButton
 				v-if="canToggleFavorite"
@@ -103,6 +108,7 @@ import BaseButton from '@/components/base/BaseButton.vue'
 import ProjectSettingsDropdown from '@/components/project/ProjectSettingsDropdown.vue'
 import {getProjectTitle} from '@/helpers/getProjectTitle'
 import ColorBubble from '@/components/misc/ColorBubble.vue'
+import ProgressRing from '@/components/misc/ProgressRing.vue'
 import ProjectsNavigation from '@/components/home/ProjectsNavigation.vue'
 import {PERMISSIONS} from '@/constants/permissions'
 import {isSavedFilter} from '@/services/savedFilter'
@@ -288,6 +294,10 @@ const canToggleFavorite = computed(() => {
 .navigation-item {
 	position: relative;
 	transition: background-color $transition, box-shadow $transition;
+}
+
+.project-menu-progress {
+	margin-inline-start: .5rem;
 }
 
 .navigation-item:has(*:focus-visible) {

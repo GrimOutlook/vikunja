@@ -21,7 +21,9 @@ export interface IProject extends IAbstract {
 	backgroundBlurHash: string
 	parentProjectId: number
 	views: IProjectView[]
-	
+	doneTaskCount: number
+	totalTaskCount: number
+
 	created: Date
 	updated: Date
 }

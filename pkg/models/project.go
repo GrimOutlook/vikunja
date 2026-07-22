@@ -77,6 +77,11 @@ type Project struct {
 
 	Views []*ProjectView `xorm:"-" json:"views" readOnly:"true" doc:"The views configured for this project. Managed through the project view endpoints."`
 
+	// The number of tasks in this project that are marked as done.
+	DoneTaskCount int64 `xorm:"-" json:"done_task_count" readOnly:"true" doc:"The number of tasks in this project that are marked as done."`
+	// The total number of tasks in this project.
+	TotalTaskCount int64 `xorm:"-" json:"total_task_count" readOnly:"true" doc:"The total number of tasks in this project."`
+
 	Expand        ProjectExpandable `xorm:"-" json:"-" query:"expand"`
 	MaxPermission Permission        `xorm:"-" json:"max_permission" readOnly:"true" doc:"The maximum permission the requesting user has on this project (0 = read, 1 = read/write, 2 = admin)."`
 
@@ -446,7 +451,11 @@ func (p *Project) ReadOne(s *xorm.Session, a web.Auth) (err error) {
 	}
 
 	p.Views, err = getViewsForProject(s, p.ID)
-	return
+	if err != nil {
+		return
+	}
+
+	return addTaskCountsToProjects(s, []*Project{p})
 }
 
 // GetProjectSimpleByID gets a project with only the basic items, aka no tasks or user objects. Returns an error if the project does not exist.
@@ -827,9 +836,63 @@ func GetAllParentProjects(s *xorm.Session, projectID int64) (allProjects map[int
 	return
 }
 
+// projectTaskCount is the aggregation row used by addTaskCountsToProjects.
+type projectTaskCount struct {
+	ProjectID int64 `xorm:"project_id"`
+	Total     int64 `xorm:"total"`
+	Done      int64 `xorm:"done"`
+}
+
+// addTaskCountsToProjects batches a single grouped query to set DoneTaskCount
+// and TotalTaskCount on every project in the slice, avoiding one query per
+// project. Pseudo-projects (Favorites, saved filters) have non-positive IDs
+// and are skipped since "tasks" never has rows for them.
+func addTaskCountsToProjects(s *xorm.Session, projects []*Project) error {
+	projectIDs := make([]int64, 0, len(projects))
+	for _, p := range projects {
+		if p.ID > 0 {
+			projectIDs = append(projectIDs, p.ID)
+		}
+	}
+	if len(projectIDs) == 0 {
+		return nil
+	}
+
+	counts := []*projectTaskCount{}
+	err := s.
+		Table("tasks").
+		Select("project_id, COUNT(*) AS total, SUM(CASE WHEN done THEN 1 ELSE 0 END) AS done").
+		In("project_id", projectIDs).
+		Where("deleted_at IS NULL").
+		GroupBy("project_id").
+		Find(&counts)
+	if err != nil {
+		return err
+	}
+
+	countMap := make(map[int64]*projectTaskCount, len(counts))
+	for _, c := range counts {
+		countMap[c.ProjectID] = c
+	}
+
+	for _, p := range projects {
+		if c, has := countMap[p.ID]; has {
+			p.DoneTaskCount = c.Done
+			p.TotalTaskCount = c.Total
+		}
+	}
+
+	return nil
+}
+
 // addProjectDetails adds owner user objects and project tasks to all projects in the slice
 func addProjectDetails(s *xorm.Session, projects []*Project, a web.Auth) (err error) {
 	if len(projects) == 0 {
+		return
+	}
+
+	err = addTaskCountsToProjects(s, projects)
+	if err != nil {
 		return
 	}
 

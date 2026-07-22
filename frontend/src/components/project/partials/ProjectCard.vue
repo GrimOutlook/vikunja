@@ -32,6 +32,20 @@
 			</span>
 			{{ getProjectTitle(project) }}
 		</div>
+		<div
+			v-if="project.totalTaskCount > 0"
+			class="project-progress-wrapper"
+			aria-hidden="true"
+		>
+			<ProgressBar
+				class="project-progress"
+				:value="progressPercent"
+				:is-primary="progressPercent < 100"
+				:is-success="progressPercent >= 100"
+				is-small
+			/>
+			<span class="project-progress-count">{{ project.doneTaskCount }}/{{ project.totalTaskCount }}</span>
+		</div>
 		<BaseButton
 			class="project-button"
 			:aria-label="project.title"
@@ -58,6 +72,7 @@ import {computed} from 'vue'
 import type {IProject} from '@/modelTypes/IProject'
 
 import BaseButton from '@/components/base/BaseButton.vue'
+import ProgressBar from '@/components/misc/ProgressBar.vue'
 
 import {useProjectBackground} from '@/composables/useProjectBackground'
 import {useProjectStore} from '@/stores/projects'
@@ -70,6 +85,13 @@ const props = defineProps<{
 const {background, blurHashUrl} = useProjectBackground(() => props.project)
 
 const projectStore = useProjectStore()
+
+const progressPercent = computed(() => {
+	if (props.project.totalTaskCount === 0) {
+		return 0
+	}
+	return Math.round((props.project.doneTaskCount / props.project.totalTaskCount) * 10000) / 100
+})
 
 const textOnlyDescription = computed(() => {
 	return props.project.description ? props.project.description.replace(/<[^>]*>/g, '') : ''
@@ -155,6 +177,38 @@ const textOnlyDescription = computed(() => {
 		0 0 10px var(--black),
 		1px 1px 5px var(--grey-700),
 		-1px -1px 5px var(--grey-700);
+	color: var(--white);
+}
+
+.project-progress-wrapper {
+	display: flex;
+	align-items: center;
+	gap: .5rem;
+	inline-size: 100%;
+	margin-block-start: .5rem;
+}
+
+.project-progress {
+	flex: 1 1 auto;
+	min-inline-size: 0;
+	margin: 0;
+}
+
+.project-progress-count {
+	font-size: .75rem;
+	color: var(--grey-500);
+	white-space: nowrap;
+	flex: 0 0 auto;
+}
+
+.has-light-text .project-progress-count {
+	color: var(--grey-100);
+}
+
+.has-background .project-progress-count {
+	text-shadow:
+		0 0 6px var(--black),
+		1px 1px 3px var(--grey-700);
 	color: var(--white);
 }
 

@@ -632,6 +632,34 @@ func TestProject_ReadAll(t *testing.T) {
 		assert.Equal(t, int64(-1), ls[26].ID)
 		assert.Equal(t, int64(-2), ls[27].ID)
 	})
+	t.Run("done and total task counts", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		s := db.NewSession()
+		defer s.Close()
+		u := &user.User{ID: 1}
+		project := Project{}
+		projects3, _, _, err := project.ReadAll(s, u, "", 1, 50)
+		require.NoError(t, err)
+		ls := projects3.([]*Project)
+
+		var p1 *Project
+		for _, p := range ls {
+			if p.ID == 1 {
+				p1 = p
+				break
+			}
+		}
+		require.NotNil(t, p1)
+
+		expectedTotal, err := s.Where("project_id = ?", 1).Count(&Task{})
+		require.NoError(t, err)
+		expectedDone, err := s.Where("project_id = ? AND done = ?", 1, true).Count(&Task{})
+		require.NoError(t, err)
+
+		assert.Greater(t, expectedTotal, int64(0))
+		assert.Equal(t, expectedTotal, p1.TotalTaskCount)
+		assert.Equal(t, expectedDone, p1.DoneTaskCount)
+	})
 	t.Run("projects for nonexistent user", func(t *testing.T) {
 		db.LoadAndAssertFixtures(t)
 		s := db.NewSession()
@@ -770,6 +798,28 @@ func TestProject_ReadOne(t *testing.T) {
 		err = l.ReadOne(s, u)
 		require.NoError(t, err)
 		assert.NotNil(t, l.Subscription)
+	})
+	t.Run("done and total task counts", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		s := db.NewSession()
+		defer s.Close()
+
+		u := &user.User{ID: 1}
+		l := &Project{ID: 1}
+		can, _, err := l.CanRead(s, u)
+		require.NoError(t, err)
+		assert.True(t, can)
+		err = l.ReadOne(s, u)
+		require.NoError(t, err)
+
+		expectedTotal, err := s.Where("project_id = ?", 1).Count(&Task{})
+		require.NoError(t, err)
+		expectedDone, err := s.Where("project_id = ? AND done = ?", 1, true).Count(&Task{})
+		require.NoError(t, err)
+
+		assert.Greater(t, expectedTotal, int64(0))
+		assert.Equal(t, expectedTotal, l.TotalTaskCount)
+		assert.Equal(t, expectedDone, l.DoneTaskCount)
 	})
 }
 
