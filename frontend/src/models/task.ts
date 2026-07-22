@@ -85,6 +85,7 @@ export default class TaskModel extends AbstractModel<ITask> implements ITask {
 	index = 0
 	isFavorite = false
 	subscription: ISubscription = null
+	trackedProjectId: IProject['id'] | null = null
 
 	position = 0
 	

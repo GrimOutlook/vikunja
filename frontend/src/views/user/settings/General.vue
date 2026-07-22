@@ -66,6 +66,18 @@
 					:saved-filters-only="true"
 				/>
 			</FormField>
+			<FormField
+				:label="$t('user.settings.general.subprojectTaskTitleTemplate')"
+				layout="two-col"
+			>
+				<FormInput
+					v-model="settings.subprojectTaskTitleTemplate"
+					:placeholder="DEFAULT_SUBPROJECT_TASK_TITLE_TEMPLATE"
+				/>
+			</FormField>
+			<p class="help">
+				{{ $t('user.settings.general.subprojectTaskTitleTemplateDescription') }}
+			</p>
 			<FormCheckbox
 				v-model="settings.frontendSettings.showLastViewed"
 				:label="$t('user.settings.general.showLastViewed')"
@@ -338,6 +350,7 @@ const {t} = useI18n({useScope: 'global'})
 useTitle(() => `${t('user.settings.general.title')} - ${t('user.settings.title')}`)
 
 const DEFAULT_PROJECT_ID = 0
+const DEFAULT_SUBPROJECT_TASK_TITLE_TEMPLATE = '{{Subproject}} Subproject'
 
 const defaultViewOptions = computed(() =>
 	Object.values(DEFAULT_PROJECT_VIEW_SETTINGS).map(view => ({

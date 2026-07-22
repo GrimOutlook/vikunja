@@ -48,11 +48,22 @@ in {
     package = pkgs-unstable.mailpit;
   };
 
+  # `devenv up` starts both in one call. `mage build:build` stubs
+  # frontend/dist first so the API's //go:embed doesn't fail on a fresh
+  # checkout; the frontend installs/patches sass-embedded before serving.
+  processes = {
+    api.exec = "mage build:build && ./vikunja";
+    frontend.exec = "cd frontend && pnpm install && patch-sass-embedded && pnpm dev";
+  };
+
   env = {
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1";
     PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "1";
 #    PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH = "${pkgs-unstable.chromium}/bin/chromium";
     VIKUNJA_SERVICE_TESTINGTOKEN = "test";
+    # Required by the api process below: CORS is on by default and refuses to
+    # start without a public URL configured, and a fresh checkout has no config.yml.
+    VIKUNJA_SERVICE_PUBLICURL = "http://localhost:3456/";
   };
 	
 	devcontainer = {

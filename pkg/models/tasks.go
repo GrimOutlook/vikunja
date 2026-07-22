@@ -97,6 +97,11 @@ type Task struct {
 	// Determines how far a task is left from being done
 	PercentDone float64 `xorm:"DOUBLE null" json:"percent_done" doc:"How far the task is from done, between 0 and 1."`
 
+	// If set, this task is a system-managed tracker for the subproject with this id: it mirrors that
+	// subproject's completion progress in percent_done. Created automatically when the subproject is
+	// created and removed automatically when it is deleted; cannot be created or deleted via the API.
+	TrackedProjectID *int64 `xorm:"bigint null INDEX" json:"tracked_project_id,omitempty" readOnly:"true" doc:"If set, this task tracks the completion progress of the subproject with this id. System-managed: created when the subproject is created and removed when it is deleted."`
+
 	// The task identifier, based on the project identifier and the task's index
 	Identifier string `xorm:"-" json:"identifier" readOnly:"true" doc:"The textual task identifier, derived from the project identifier and the task index (e.g. \"PROJ-12\")."`
 	// The task index, calculated per project
@@ -1036,6 +1041,10 @@ func createTask(s *xorm.Session, t *Task, a web.Auth, updateAssignees bool, setB
 		Doer: createdBy,
 	})
 
+	if err = syncTrackerTaskForSubproject(s, t.ProjectID); err != nil {
+		return err
+	}
+
 	err = updateProjectLastUpdated(s, &Project{ID: t.ProjectID})
 	return
 }
@@ -1136,6 +1145,11 @@ func (t *Task) updateSingleTask(s *xorm.Session, a web.Auth, fields []string) (e
 	if err != nil {
 		return
 	}
+
+	// Captured before any merging below overwrites ot, so the post-update sync
+	// below reflects the task's state as it was before this update.
+	oldProjectID := ot.ProjectID
+	trackedProjectID := ot.TrackedProjectID
 
 	if t.ProjectID == 0 {
 		t.ProjectID = ot.ProjectID
@@ -1465,6 +1479,22 @@ func (t *Task) updateSingleTask(s *xorm.Session, a web.Auth, fields []string) (e
 		Task: t,
 		Doer: doerFromAuth(s, a),
 	})
+
+	// If the task itself is a subproject tracker, re-derive its percent_done from the
+	// subproject's real task counts, discarding any value the caller tried to set directly.
+	if trackedProjectID != nil {
+		if err := syncTrackerTaskForSubproject(s, *trackedProjectID); err != nil {
+			return err
+		}
+	}
+	if err := syncTrackerTaskForSubproject(s, t.ProjectID); err != nil {
+		return err
+	}
+	if oldProjectID != t.ProjectID {
+		if err := syncTrackerTaskForSubproject(s, oldProjectID); err != nil {
+			return err
+		}
+	}
 
 	return updateProjectLastUpdated(s, &Project{ID: t.ProjectID})
 }
@@ -1929,6 +1959,10 @@ func (t *Task) Delete(s *xorm.Session, a web.Auth) (err error) {
 		Task: fullTask,
 		Doer: doerFromAuth(s, a),
 	})
+
+	if err = syncTrackerTaskForSubproject(s, fullTask.ProjectID); err != nil {
+		return err
+	}
 
 	// fullTask, not t: the receiver only has the id from the route param
 	err = updateProjectLastUpdated(s, &Project{ID: fullTask.ProjectID})

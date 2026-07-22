@@ -119,6 +119,11 @@ type User struct {
 	Language   string `xorm:"varchar(50) null" json:"-" valid:"language"`
 	Timezone   string `xorm:"varchar(255) null" json:"-"`
 
+	// SubprojectTaskTitleTemplate is the default title template for subproject tracker
+	// tasks (see models.DefaultSubprojectTrackerTitleTemplate). Empty means the default
+	// template is used.
+	SubprojectTaskTitleTemplate string `xorm:"varchar(250) null" json:"-"`
+
 	DeletionScheduledAt      time.Time `xorm:"datetime null" json:"-"`
 	DeletionLastReminderSent time.Time `xorm:"datetime null" json:"-"`
 

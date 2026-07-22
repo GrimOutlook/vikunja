@@ -19,7 +19,8 @@ export default class UserSettingsModel extends AbstractModel<IUserSettings> impl
 	defaultProjectId = undefined
 	weekStart = 0 as IUserSettings['weekStart']
 	timezone = ''
-	language = getBrowserLanguage() 
+	language = getBrowserLanguage()
+	subprojectTaskTitleTemplate = ''
 	frontendSettings: IFrontendSettings = {
 		playSoundWhenDone: true,
 		quickAddMagicMode: PrefixMode.Default,

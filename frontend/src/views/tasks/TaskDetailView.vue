@@ -155,7 +155,7 @@
 							appear
 						>
 							<div
-								v-if="activeFields.percentDone"
+								v-if="activeFields.percentDone && !isSubprojectTracker"
 								class="column"
 							>
 								<!-- Progress -->
@@ -337,6 +337,12 @@
 							:creation-disabled-message="authStore.isLinkShareAuth ? $t('task.label.linkShareCannotCreate') : ''"
 						/>
 					</div>
+
+					<!-- Subproject tracker -->
+					<SubprojectTrackerBanner
+						v-if="isSubprojectTracker"
+						:task="task"
+					/>
 
 					<!-- Description -->
 					<div class="details content description">
@@ -599,6 +605,7 @@
 							{{ $t('task.detail.actions.repeatAfter') }}
 						</XButton>
 						<XButton
+							v-if="!isSubprojectTracker"
 							v-shortcut="deleteShortcut"
 							icon="trash-alt"
 							:shadow="false"
@@ -689,6 +696,7 @@ import PrioritySelect from '@/components/tasks/partials/PrioritySelect.vue'
 import RelatedTasks from '@/components/tasks/partials/RelatedTasks.vue'
 import Reminders from '@/components/tasks/partials/Reminders.vue'
 import RepeatAfter from '@/components/tasks/partials/RepeatAfter.vue'
+import SubprojectTrackerBanner from '@/components/tasks/partials/SubprojectTrackerBanner.vue'
 import TaskSubscription from '@/components/misc/Subscription.vue'
 import CustomTransition from '@/components/misc/CustomTransition.vue'
 import AssigneeList from '@/components/tasks/partials/AssigneeList.vue'
@@ -830,6 +838,8 @@ const canWrite = computed(() => (
 	task.value.maxPermission !== null &&
 	task.value.maxPermission > PERMISSIONS.READ
 ))
+
+const isSubprojectTracker = computed(() => task.value.trackedProjectId !== null)
 
 const color = computed(() => {
 	const color = task.value.getHexColor

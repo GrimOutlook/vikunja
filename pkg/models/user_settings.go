@@ -41,6 +41,7 @@ type UserGeneralSettings struct {
 	WeekStart                    int    `json:"week_start" valid:"range(0|6)" minimum:"0" maximum:"6" doc:"The day the week starts on: 0=sunday, 1=monday, … 6=saturday."`
 	Language                     string `json:"language" doc:"The user's language."`
 	Timezone                     string `json:"timezone" doc:"The user's time zone, used to send task reminders in their local time."`
+	SubprojectTaskTitleTemplate  string `json:"subproject_task_title_template" doc:"The title template used for the tracker task created in a project when a subproject is added to it. '{{Subproject}}' is replaced with the subproject's title. Empty uses the default, '{{Subproject}} Subproject'."`
 	FrontendSettings             any    `json:"frontend_settings" doc:"Arbitrary settings used only by the frontend. Any JSON value; stored and returned verbatim."`
 	// Server/OpenID-provided; populated on read, ignored on write.
 	ExtraSettingsLinks map[string]any `json:"extra_settings_links" readOnly:"true" doc:"Additional settings links provided by the OpenID provider. Server-controlled."`
@@ -60,6 +61,7 @@ func NewUserGeneralSettings(u *user.User) *UserGeneralSettings {
 		WeekStart:                    u.WeekStart,
 		Language:                     u.Language,
 		Timezone:                     u.Timezone,
+		SubprojectTaskTitleTemplate:  u.SubprojectTaskTitleTemplate,
 		FrontendSettings:             u.FrontendSettings,
 		ExtraSettingsLinks:           u.ExtraSettingsLinks,
 	}
@@ -106,6 +108,7 @@ func UpdateUserGeneralSettings(s *xorm.Session, u *user.User, settings *UserGene
 	u.WeekStart = settings.WeekStart
 	u.Language = settings.Language
 	u.Timezone = settings.Timezone
+	u.SubprojectTaskTitleTemplate = settings.SubprojectTaskTitleTemplate
 	u.OverdueTasksRemindersTime = settings.OverdueTasksRemindersTime
 	u.FrontendSettings = settings.FrontendSettings
 

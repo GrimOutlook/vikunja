@@ -159,6 +159,8 @@
         "quickAddDefaultRemindersDescription": "These reminders will be added automatically to every task created via quick add magic that has a due date.",
         "quickAddDefaultRemindersHint": "Add one or more reminders relative to the task's due date. Leave empty to disable.",
         "filterUsedOnOverview": "Saved filter used on the overview page",
+        "subprojectTaskTitleTemplate": "Subproject tracker task title",
+        "subprojectTaskTitleTemplateDescription": "Used as the title of the task created in a project when a subproject is added to it. Write Subproject wrapped in double curly brackets as a placeholder for the subproject's title.",
         "showLastViewed": "Show last viewed projects on the overview page",
         "minimumPriority": "Minimum visible task priority",
         "dateDisplay": "Date display format",
@@ -998,6 +1000,10 @@
       "bucketSelectLabel": "Kanban bucket: {bucket}",
       "bucketChangedSuccess": "The task bucket has been changed successfully.",
       "belongsToProject": "This task belongs to project '{project}'",
+      "subprojectTracker": {
+        "description": "This task tracks the progress of a subproject and is managed automatically.",
+        "viewSubproject": "View subproject"
+      },
       "back": "Back to project",
       "due": "Due {at}",
       "closeTaskDetail": "Close task detail",

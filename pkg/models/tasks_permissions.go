@@ -23,6 +23,16 @@ import (
 
 // CanDelete checks if the user can delete an task
 func (t *Task) CanDelete(s *xorm.Session, a web.Auth) (bool, error) {
+	// Subproject tracker tasks are system-managed and only ever removed when their
+	// subproject is deleted, never through the API.
+	ot, err := GetTaskByIDSimple(s, t.ID)
+	if err != nil {
+		return false, err
+	}
+	if ot.TrackedProjectID != nil {
+		return false, nil
+	}
+
 	return t.canDoTask(s, a)
 }
 
@@ -33,6 +43,12 @@ func (t *Task) CanUpdate(s *xorm.Session, a web.Auth) (bool, error) {
 
 // CanCreate determines if a user has the permission to create a project task
 func (t *Task) CanCreate(s *xorm.Session, a web.Auth) (bool, error) {
+	// Subproject tracker tasks are system-managed and only ever created alongside
+	// their subproject, never directly through the API.
+	if t.TrackedProjectID != nil {
+		return false, nil
+	}
+
 	// A user can do a task if he has write acces to its project
 	l := &Project{ID: t.ProjectID}
 	return l.CanWrite(s, a)
@@ -67,6 +83,11 @@ func (t *Task) canDoTask(s *xorm.Session, a web.Auth) (bool, error) {
 	ot, err := GetTaskByIDSimple(s, t.ID)
 	if err != nil {
 		return false, err
+	}
+
+	// Subproject tracker tasks must stay in their subproject's parent project.
+	if ot.TrackedProjectID != nil && t.ProjectID != 0 && t.ProjectID != ot.ProjectID {
+		return false, ErrGenericForbidden{}
 	}
 
 	// Check if we're moving the task into a different project to check if the user has sufficient permissions for that on the new project

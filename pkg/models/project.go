@@ -1125,6 +1125,12 @@ func CreateProject(s *xorm.Session, project *Project, auth web.Auth, createBackl
 		}
 	}
 
+	if project.parentID() != 0 {
+		if err = createSubprojectTrackerTask(s, project, doer); err != nil {
+			return
+		}
+	}
+
 	events.DispatchOnCommit(s, &ProjectCreatedEvent{
 		Project: project,
 		Doer:    doerFromAuth(s, auth),
@@ -1453,6 +1459,14 @@ func (p *Project) Delete(s *xorm.Session, a web.Auth) (err error) {
 	}
 
 	fullProject, err := GetProjectSimpleByID(s, p.ID)
+	if err != nil {
+		return
+	}
+
+	// Remove the tracker task this subproject may have in its parent project. A no-op
+	// if there is none (e.g. it was already removed above as one of this project's own
+	// tasks, when this deletion is itself part of a parent project's cascade).
+	err = deleteSubprojectTrackerTask(s, fullProject.ID)
 	if err != nil {
 		return
 	}
