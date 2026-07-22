@@ -21,22 +21,23 @@
           pkgs = nixpkgs.legacyPackages.${system};
           inherit (pkgs) lib;
 
-          # Track exactly what git tracks: excludes .gitignore'd build
-          # artifacts (frontend/node_modules, the vikunja binary, *.db, etc.)
-          # and .git itself, so unrelated local changes don't bust the cache.
-          gitSource =
-            root:
-            lib.fileset.toSource {
-              inherit root;
-              fileset = lib.fileset.gitTracked root;
-            };
-
           version = self.shortRev or self.dirtyShortRev or "dev";
 
+          # Plain relative paths are enough here - Nix filters a flake's
+          # source to git-tracked content automatically when it's fetched
+          # git-aware (accessed directly, or via another flake's `git+`
+          # input). This does NOT hold for a `path:` input, which is a raw
+          # directory copy with no .gitignore awareness; consume this flake
+          # via git+file://<path> (or a real git remote), not path:.
           frontend = pkgs.stdenv.mkDerivation (finalAttrs: {
             pname = "vikunja-frontend";
             inherit version;
-            src = gitSource ./frontend;
+            src = ./frontend;
+
+            # Some pnpm versions want to interactively confirm purging
+            # node_modules before a clean install; there's no TTY in the
+            # sandbox to answer that prompt.
+            CI = "true";
 
             pnpmDeps = pkgs.fetchPnpmDeps {
               inherit (finalAttrs) pname version src;
@@ -68,7 +69,7 @@
           default = (pkgs.buildGoModule.override { go = pkgs.go_1_26; }) {
             pname = "vikunja";
             inherit version;
-            src = gitSource ./.;
+            src = ./.;
 
             vendorHash = "sha256-ukcWrTdc1yvP7i918INpqWLmDC7e/80IeUw0P5jbXqk=";
 
@@ -76,6 +77,11 @@
 
             inherit frontend;
             prePatch = ''
+              # Belt and suspenders against a stray pre-existing frontend/dist
+              # (e.g. from a misconfigured source fetch): without this, `cp -r`
+              # would nest ${frontend} inside it instead of replacing it,
+              # breaking every go:embed'd asset path.
+              rm -rf frontend/dist
               cp -r ${frontend} frontend/dist
             '';
 
