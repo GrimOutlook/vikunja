@@ -16,6 +16,8 @@ export interface GanttBarModel {
 		isParent?: boolean
 		hasDerivedDates?: boolean
 		indentLevel?: number
+		percentDone?: number
+		isSubprojectTracker?: boolean
 	}
 }
 export interface UseGanttBarOptions {

@@ -306,7 +306,22 @@
 										:date="t.endDate"
 									/>
 									<td v-if="activeColumns.percentDone">
-										{{ t.percentDone * 100 }}%
+										<div
+											v-if="t.percentDone > 0 || t.trackedProjectId"
+											class="task-progress-wrapper"
+										>
+											<ProgressBar
+												class="task-progress"
+												:value="t.percentDone * 100"
+												:is-primary="t.percentDone < 1"
+												:is-success="t.percentDone >= 1"
+												is-small
+											/>
+											<span class="task-progress-percent">{{ t.percentDone * 100 }}%</span>
+										</div>
+										<template v-else>
+											{{ t.percentDone * 100 }}%
+										</template>
 									</td>
 									<DateTableCell
 										v-if="activeColumns.doneAt"
@@ -349,6 +364,7 @@ import {useStorage} from '@vueuse/core'
 
 import ProjectWrapper from '@/components/project/ProjectWrapper.vue'
 import Done from '@/components/misc/Done.vue'
+import ProgressBar from '@/components/misc/ProgressBar.vue'
 import User from '@/components/misc/User.vue'
 import PriorityLabel from '@/components/tasks/partials/PriorityLabel.vue'
 import Labels from '@/components/tasks/partials/Labels.vue'
@@ -520,5 +536,21 @@ const taskDetailRoutes = computed(() => Object.fromEntries(
 
 .filter-container :deep(.popup) {
 	inset-block-start: 7rem;
+}
+
+.task-progress-wrapper {
+	display: flex;
+	align-items: center;
+	gap: .5rem;
+}
+
+.task-progress {
+	min-inline-size: 4rem;
+	margin: 0;
+	flex: 0 0 auto;
+}
+
+.task-progress-percent {
+	white-space: nowrap;
 }
 </style>

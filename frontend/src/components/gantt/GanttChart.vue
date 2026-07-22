@@ -295,6 +295,8 @@ function transformTaskToGanttBar(node: GanttTaskTreeNode): GanttBarModel {
 			isParent: node.isParent,
 			hasDerivedDates: node.hasDerivedDates,
 			indentLevel: node.indentLevel,
+			percentDone: t.percentDone,
+			isSubprojectTracker: Boolean(t.trackedProjectId),
 		},
 	}
 }

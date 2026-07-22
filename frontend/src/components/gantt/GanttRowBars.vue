@@ -111,6 +111,26 @@
 				/>
 			</g>
 
+			<!-- Progress indicator for tasks with a percent done or a subproject tracker -->
+			<g v-if="hasProgress(bar)">
+				<rect
+					:x="getBarX(bar)"
+					y="36"
+					:width="getBarWidth(bar)"
+					height="3"
+					rx="1.5"
+					fill="var(--grey-400)"
+				/>
+				<rect
+					:x="getBarX(bar)"
+					y="36"
+					:width="getProgressWidth(bar)"
+					height="3"
+					rx="1.5"
+					:fill="getProgressFill(bar)"
+				/>
+			</g>
+
 			<!-- Left resize handle (hidden for endOnly bars) -->
 			<rect
 				v-if="bar.meta?.dateType !== 'endOnly'"
@@ -378,6 +398,18 @@ function getBarFillAttr(bar: GanttBarModel): string {
 		return `url(#gradient-${bar.id})`
 	}
 	return getBarFill(bar)
+}
+
+function hasProgress(bar: GanttBarModel): boolean {
+	return (bar.meta?.percentDone ?? 0) > 0 || Boolean(bar.meta?.isSubprojectTracker)
+}
+
+function getProgressWidth(bar: GanttBarModel) {
+	return getBarWidth.value(bar) * (bar.meta?.percentDone ?? 0)
+}
+
+function getProgressFill(bar: GanttBarModel) {
+	return (bar.meta?.percentDone ?? 0) >= 1 ? 'var(--success)' : 'var(--primary)'
 }
 
 function getBarStroke(bar: GanttBarModel) {
