@@ -12,7 +12,8 @@
 			<ProgressBar
 				:value="task.percentDone * 100"
 				is-small
-				is-primary
+				:is-primary="task.percentDone < 1"
+				:is-success="task.percentDone >= 1"
 			/>
 			<span>{{ Math.round(task.percentDone * 100) }}%</span>
 			<span

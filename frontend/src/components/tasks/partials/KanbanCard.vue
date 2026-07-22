@@ -83,6 +83,8 @@
 				<ProgressBar
 					class="task-progress"
 					:value="task.percentDone * 100"
+					:is-primary="task.percentDone < 1"
+					:is-success="task.percentDone >= 1"
 				/>
 				<span
 					v-if="task.subprojectTotalTaskCount !== null"
