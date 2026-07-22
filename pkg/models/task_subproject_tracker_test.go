@@ -161,9 +161,11 @@ func TestSubprojectTracker(t *testing.T) {
 		require.NoError(t, s.Commit())
 
 		db.AssertExists(t, "tasks", map[string]interface{}{
-			"project_id":         parent.ID,
-			"tracked_project_id": sub.ID,
-			"percent_done":       0.5,
+			"project_id":                  parent.ID,
+			"tracked_project_id":          sub.ID,
+			"percent_done":                0.5,
+			"subproject_done_task_count":  1,
+			"subproject_total_task_count": 2,
 		}, false)
 
 		s2 := db.NewSession()
@@ -173,8 +175,109 @@ func TestSubprojectTracker(t *testing.T) {
 		require.NoError(t, s2.Commit())
 
 		db.AssertExists(t, "tasks", map[string]interface{}{
+			"project_id":                  parent.ID,
+			"tracked_project_id":          sub.ID,
+			"percent_done":                1,
+			"subproject_done_task_count":  2,
+			"subproject_total_task_count": 2,
+		}, false)
+	})
+
+	t.Run("a freshly created subproject's tracker starts at 0/0, not unset", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		s := db.NewSession()
+		defer s.Close()
+
+		parent := Project{Title: "fresh parent"}
+		require.NoError(t, parent.Create(s, usr))
+		sub := Project{Title: "fresh child", ParentProjectID: &parent.ID}
+		require.NoError(t, sub.Create(s, usr))
+		require.NoError(t, s.Commit())
+
+		db.AssertExists(t, "tasks", map[string]interface{}{
+			"project_id":                  parent.ID,
+			"tracked_project_id":          sub.ID,
+			"percent_done":                0,
+			"subproject_done_task_count":  0,
+			"subproject_total_task_count": 0,
+		}, false)
+	})
+
+	t.Run("deleting a subproject task recalculates the tracker's percent_done", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		s := db.NewSession()
+		defer s.Close()
+
+		parent := Project{Title: "delete-task parent"}
+		require.NoError(t, parent.Create(s, usr))
+		sub := Project{Title: "delete-task child", ParentProjectID: &parent.ID}
+		require.NoError(t, sub.Create(s, usr))
+
+		taskOne := Task{ProjectID: sub.ID, Title: "one", Done: true}
+		require.NoError(t, taskOne.Create(s, usr))
+		taskTwo := Task{ProjectID: sub.ID, Title: "two"}
+		require.NoError(t, taskTwo.Create(s, usr))
+		require.NoError(t, s.Commit())
+
+		db.AssertExists(t, "tasks", map[string]interface{}{
 			"project_id":         parent.ID,
 			"tracked_project_id": sub.ID,
+			"percent_done":       0.5,
+		}, false)
+
+		// Deleting the one not-done task should leave the subproject 100% done.
+		s2 := db.NewSession()
+		defer s2.Close()
+		require.NoError(t, taskTwo.Delete(s2, usr))
+		require.NoError(t, s2.Commit())
+
+		db.AssertExists(t, "tasks", map[string]interface{}{
+			"project_id":         parent.ID,
+			"tracked_project_id": sub.ID,
+			"percent_done":       1,
+		}, false)
+	})
+
+	t.Run("moving a task between subprojects recalculates both trackers", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		s := db.NewSession()
+		defer s.Close()
+
+		parent := Project{Title: "move parent"}
+		require.NoError(t, parent.Create(s, usr))
+		subA := Project{Title: "move child a", ParentProjectID: &parent.ID}
+		require.NoError(t, subA.Create(s, usr))
+		subB := Project{Title: "move child b", ParentProjectID: &parent.ID}
+		require.NoError(t, subB.Create(s, usr))
+
+		// subA: 1 done task -> 100%. subB: empty -> 0%.
+		taskInA := Task{ProjectID: subA.ID, Title: "in a", Done: true}
+		require.NoError(t, taskInA.Create(s, usr))
+		require.NoError(t, s.Commit())
+
+		db.AssertExists(t, "tasks", map[string]interface{}{
+			"tracked_project_id": subA.ID,
+			"percent_done":       1,
+		}, false)
+		db.AssertExists(t, "tasks", map[string]interface{}{
+			"tracked_project_id": subB.ID,
+			"percent_done":       0,
+		}, false)
+
+		// Move the done task from subA to subB: subA becomes empty (0%),
+		// subB gets its one done task (100%).
+		s2 := db.NewSession()
+		defer s2.Close()
+		taskInA.ProjectID = subB.ID
+		require.NoError(t, taskInA.Update(s2, usr))
+		require.NoError(t, s2.Commit())
+
+		db.AssertExists(t, "tasks", map[string]interface{}{
+			"tracked_project_id": subA.ID,
+			"percent_done":       0,
+		}, false)
+		db.AssertExists(t, "tasks", map[string]interface{}{
+			"tracked_project_id": subB.ID,
 			"percent_done":       1,
 		}, false)
 	})

@@ -47,6 +47,8 @@ export interface ITask extends IAbstract {
 	isUnread?: boolean
 	subscription: ISubscription
 	trackedProjectId: IProject['id'] | null
+	subprojectDoneTaskCount: number | null
+	subprojectTotalTaskCount: number | null
 
 	position: number
 	

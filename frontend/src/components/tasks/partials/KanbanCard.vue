@@ -76,11 +76,21 @@
 				{{ projectTitle }}
 			</span>
 
-			<ProgressBar
-				v-if="task.percentDone > 0"
-				class="task-progress"
-				:value="task.percentDone * 100"
-			/>
+			<div
+				v-if="task.percentDone > 0 || task.trackedProjectId"
+				class="task-progress-wrapper"
+			>
+				<ProgressBar
+					class="task-progress"
+					:value="task.percentDone * 100"
+				/>
+				<span
+					v-if="task.subprojectTotalTaskCount !== null"
+					class="task-progress-count"
+				>
+					{{ task.subprojectDoneTaskCount }}/{{ task.subprojectTotalTaskCount }}
+				</span>
+			</div>
 			<div class="footer">
 				<Labels :labels="task.labels" />
 				<PriorityLabel
@@ -421,10 +431,24 @@ $task-background: var(--white);
 	margin-inline-end: .25rem;
 }
 
-.task-progress {
+.task-progress-wrapper {
+	display: flex;
+	align-items: center;
+	gap: .5rem;
 	margin: 8px 0 0;
-	inline-size: 100%;
+}
+
+.task-progress {
 	block-size: 0.5rem;
+	flex: 1 1 auto;
+	min-inline-size: 0;
+}
+
+.task-progress-count {
+	font-size: .75rem;
+	color: var(--grey-500);
+	white-space: nowrap;
+	flex: 0 0 auto;
 }
 
 :deep(.comment-count) {

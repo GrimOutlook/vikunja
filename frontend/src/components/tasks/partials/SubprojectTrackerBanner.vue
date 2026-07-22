@@ -15,6 +15,12 @@
 				is-primary
 			/>
 			<span>{{ Math.round(task.percentDone * 100) }}%</span>
+			<span
+				v-if="task.subprojectTotalTaskCount !== null"
+				class="subproject-tracker-banner-count"
+			>
+				({{ task.subprojectDoneTaskCount }}/{{ task.subprojectTotalTaskCount }})
+			</span>
 		</div>
 		<BaseButton
 			class="subproject-tracker-banner-link"
@@ -66,6 +72,11 @@ defineProps<{
 	align-items: center;
 	gap: .5rem;
 	flex: 0 0 auto;
+}
+
+.subproject-tracker-banner-count {
+	color: var(--grey-500);
+	white-space: nowrap;
 }
 
 .subproject-tracker-banner-link {

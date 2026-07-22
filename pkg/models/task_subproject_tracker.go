@@ -52,7 +52,13 @@ func createSubprojectTrackerTask(s *xorm.Session, subproject *Project, doer *use
 		TrackedProjectID: &subprojectID,
 	}
 
-	return createTask(s, tracker, doer, false, false)
+	if err := createTask(s, tracker, doer, false, false); err != nil {
+		return err
+	}
+
+	// Populates the done/total counts as 0/0 immediately, rather than leaving
+	// them unset until the subproject's first task creates a sync.
+	return syncTrackerTaskForSubproject(s, subprojectID)
 }
 
 // deleteSubprojectTrackerTask permanently removes the tracker task for subprojectID,
@@ -71,29 +77,30 @@ func deleteSubprojectTrackerTask(s *xorm.Session, subprojectID int64) error {
 	return hardDeleteTask(s, tracker)
 }
 
-// calculateSubprojectProgress returns the fraction (0 to 1) of subprojectID's
-// non-deleted tasks that are marked done. Only tasks directly in the subproject
-// are counted, not tasks in further-nested subprojects.
-func calculateSubprojectProgress(s *xorm.Session, subprojectID int64) (float64, error) {
-	total, err := s.Where("project_id = ?", subprojectID).Count(&Task{})
+// calculateSubprojectProgress returns the number of subprojectID's non-deleted
+// tasks that are done and the total count. Only tasks directly in the
+// subproject are counted, not tasks in further-nested subprojects.
+func calculateSubprojectProgress(s *xorm.Session, subprojectID int64) (done, total int64, err error) {
+	total, err = s.Where("project_id = ?", subprojectID).Count(&Task{})
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 	if total == 0 {
-		return 0, nil
+		return 0, 0, nil
 	}
 
-	done, err := s.Where("project_id = ? AND done = ?", subprojectID, true).Count(&Task{})
+	done, err = s.Where("project_id = ? AND done = ?", subprojectID, true).Count(&Task{})
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
-	return float64(done) / float64(total), nil
+	return done, total, nil
 }
 
-// syncTrackerTaskForSubproject recomputes and persists the percent_done of
-// subprojectID's tracker task, if one exists. It is a no-op if subprojectID has no
-// parent project or its parent has no tracker task for it.
+// syncTrackerTaskForSubproject recomputes and persists the percent_done and
+// done/total task counts of subprojectID's tracker task, if one exists. It is
+// a no-op if subprojectID has no parent project or its parent has no tracker
+// task for it.
 func syncTrackerTaskForSubproject(s *xorm.Session, subprojectID int64) error {
 	subproject, err := GetProjectSimpleByID(s, subprojectID)
 	if err != nil {
@@ -118,11 +125,22 @@ func syncTrackerTaskForSubproject(s *xorm.Session, subprojectID int64) error {
 		return nil
 	}
 
-	progress, err := calculateSubprojectProgress(s, subprojectID)
+	done, total, err := calculateSubprojectProgress(s, subprojectID)
 	if err != nil {
 		return err
 	}
 
-	_, err = s.ID(tracker.ID).Cols("percent_done").Update(&Task{PercentDone: progress})
+	var percentDone float64
+	if total > 0 {
+		percentDone = float64(done) / float64(total)
+	}
+
+	_, err = s.ID(tracker.ID).
+		Cols("percent_done", "subproject_done_task_count", "subproject_total_task_count").
+		Update(&Task{
+			PercentDone:              percentDone,
+			SubprojectDoneTaskCount:  &done,
+			SubprojectTotalTaskCount: &total,
+		})
 	return err
 }

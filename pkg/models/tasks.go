@@ -101,6 +101,10 @@ type Task struct {
 	// subproject's completion progress in percent_done. Created automatically when the subproject is
 	// created and removed automatically when it is deleted; cannot be created or deleted via the API.
 	TrackedProjectID *int64 `xorm:"bigint null INDEX" json:"tracked_project_id,omitempty" readOnly:"true" doc:"If set, this task tracks the completion progress of the subproject with this id. System-managed: created when the subproject is created and removed when it is deleted."`
+	// Only set on subproject tracker tasks: the number of the tracked subproject's tasks that are done.
+	SubprojectDoneTaskCount *int64 `xorm:"bigint null" json:"subproject_done_task_count,omitempty" readOnly:"true" doc:"Only set on subproject tracker tasks: the number of the tracked subproject's tasks that are done."`
+	// Only set on subproject tracker tasks: the total number of the tracked subproject's tasks.
+	SubprojectTotalTaskCount *int64 `xorm:"bigint null" json:"subproject_total_task_count,omitempty" readOnly:"true" doc:"Only set on subproject tracker tasks: the total number of the tracked subproject's tasks."`
 
 	// The task identifier, based on the project identifier and the task's index
 	Identifier string `xorm:"-" json:"identifier" readOnly:"true" doc:"The textual task identifier, derived from the project identifier and the task index (e.g. \"PROJ-12\")."`
