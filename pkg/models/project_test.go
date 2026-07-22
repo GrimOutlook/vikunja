@@ -656,7 +656,7 @@ func TestProject_ReadAll(t *testing.T) {
 		expectedDone, err := s.Where("project_id = ? AND done = ?", 1, true).Count(&Task{})
 		require.NoError(t, err)
 
-		assert.Greater(t, expectedTotal, int64(0))
+		assert.Positive(t, expectedTotal)
 		assert.Equal(t, expectedTotal, p1.TotalTaskCount)
 		assert.Equal(t, expectedDone, p1.DoneTaskCount)
 	})
@@ -817,7 +817,7 @@ func TestProject_ReadOne(t *testing.T) {
 		expectedDone, err := s.Where("project_id = ? AND done = ?", 1, true).Count(&Task{})
 		require.NoError(t, err)
 
-		assert.Greater(t, expectedTotal, int64(0))
+		assert.Positive(t, expectedTotal)
 		assert.Equal(t, expectedTotal, l.TotalTaskCount)
 		assert.Equal(t, expectedDone, l.DoneTaskCount)
 	})
