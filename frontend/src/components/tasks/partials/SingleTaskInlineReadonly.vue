@@ -95,7 +95,7 @@
 			:value="task.percentDone * 100"
 			max="100"
 		>
-			{{ task.percentDone * 100 }}%
+			{{ Math.round(task.percentDone * 10000) / 100 }}%
 		</progress>
 	</div>
 </template>

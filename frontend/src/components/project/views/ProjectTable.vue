@@ -317,10 +317,10 @@
 												:is-success="t.percentDone >= 1"
 												is-small
 											/>
-											<span class="task-progress-percent">{{ t.percentDone * 100 }}%</span>
+											<span class="task-progress-percent">{{ Math.round(t.percentDone * 10000) / 100 }}%</span>
 										</div>
 										<template v-else>
-											{{ t.percentDone * 100 }}%
+											{{ Math.round(t.percentDone * 10000) / 100 }}%
 										</template>
 									</td>
 									<DateTableCell
@@ -406,7 +406,7 @@ const ACTIVE_COLUMNS_DEFAULT = {
 	dueDate: true,
 	startDate: false,
 	endDate: false,
-	percentDone: false,
+	percentDone: true,
 	created: false,
 	updated: false,
 	createdBy: false,
