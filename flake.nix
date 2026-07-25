@@ -71,7 +71,7 @@
             inherit version;
             src = ./.;
 
-            vendorHash = "sha256-ukcWrTdc1yvP7i918INpqWLmDC7e/80IeUw0P5jbXqk=";
+            vendorHash = "sha256-f9bFHZYqgGcrC13gZPb824hBQ4Ds2bf9wnCajZS+h3k=";
 
             nativeBuildInputs = [ pkgs.mage ];
 
