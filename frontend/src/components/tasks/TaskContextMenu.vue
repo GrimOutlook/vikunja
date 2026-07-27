@@ -975,11 +975,26 @@ async function saveRelation(otherTask: ITask | null | string, kind: IRelationKin
 	if (!otherTask || typeof otherTask === 'string' || !otherTask.id) return
 	try {
 		const taskRelationService = new TaskRelationService()
-		await Promise.all(selectedTaskItems.value.map(t => taskRelationService.create(new TaskRelationModel({
-			taskId: t.id,
-			otherTaskId: otherTask.id,
-			relationKind: kind,
-		}))))
+		const updatedTasks = await Promise.all(selectedTaskItems.value.map(async (t) => {
+			await taskRelationService.create(new TaskRelationModel({
+				taskId: t.id,
+				otherTaskId: otherTask.id,
+				relationKind: kind,
+			}))
+			if (!t.relatedTasks) {
+				t.relatedTasks = {}
+			}
+			if (!t.relatedTasks[kind]) {
+				t.relatedTasks[kind] = []
+			}
+			if (!t.relatedTasks[kind]!.some(rel => rel.id === (otherTask as ITask).id)) {
+				t.relatedTasks[kind]!.push(otherTask as ITask)
+			}
+			return await taskStore.update(t)
+		}))
+		if (updatedTasks.length > 0) {
+			emit('taskUpdated', updatedTasks[0])
+		}
 		selectedRelationTask.value = null
 		foundRelationTasks.value = []
 		toggleSubPanel('none')
