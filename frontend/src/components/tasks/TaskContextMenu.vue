@@ -1147,6 +1147,7 @@ async function saveRelation(otherTask: ITask | null | string, kind: IRelationKin
 			border-radius: $radius !important;
 			font-weight: 400 !important;
 			background-color: transparent !important;
+			padding: 0.4rem 0.85rem !important;
 
 			&:hover,
 			&:focus {
