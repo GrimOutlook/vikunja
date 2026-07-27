@@ -7,6 +7,12 @@
 	>
 		<template #header>
 			<div class="filter-container">
+				<FancyCheckbox
+					v-model="isMultiSelectMode"
+					class="mie-3 d-print-none"
+				>
+					{{ $t('task.actions.multiSelect') }}
+				</FancyCheckbox>
 				<SortPopup
 					v-model="sortByParam"
 				/>
@@ -113,8 +119,10 @@ import Nothing from '@/components/misc/Nothing.vue'
 import Pagination from '@/components/misc/Pagination.vue'
 import SortPopup from '@/components/project/partials/SortPopup.vue'
 
+import FancyCheckbox from '@/components/input/FancyCheckbox.vue'
 import {useTaskList} from '@/composables/useTaskList'
 import {useTaskDragToProject} from '@/composables/useTaskDragToProject'
+import {useTaskContextMenu} from '@/composables/useTaskContextMenu'
 import {shouldShowTaskInListView} from '@/composables/useTaskListFiltering'
 import {PERMISSIONS as Permissions} from '@/constants/permissions'
 import {calculateItemPosition} from '@/helpers/calculateItemPosition'
@@ -142,6 +150,13 @@ defineOptions({name: 'List'})
 const ctaVisible = ref(false)
 
 const drag = ref(false)
+
+const {isMultiSelectMode, clearTaskSelection} = useTaskContextMenu()
+watch(isMultiSelectMode, (val) => {
+	if (!val) {
+		clearTaskSelection()
+	}
+})
 
 const {
 	tasks: allTasks,

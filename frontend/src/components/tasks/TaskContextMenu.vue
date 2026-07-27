@@ -25,6 +25,7 @@
 
 						<!-- Action 2: Edit Title -->
 						<DropdownItem
+							v-if="!isMulti"
 							icon="pen"
 							data-cy="context-menu-edit-title"
 							@click="toggleSubPanel('editTitle')"
@@ -150,7 +151,7 @@
 						</div>
 					</div>
 
-					<!-- Subpanel: EditAssignees -->
+					<!-- Subpanel: Assignees Menu -->
 					<div
 						v-else-if="activeSubPanel === 'assignees'"
 						class="subpanel assignees-subpanel"
@@ -164,16 +165,98 @@
 							</BaseButton>
 						</div>
 						<div class="subpanel-body">
-							<EditAssignees
-								:model-value="targetTask.assignees"
-								:task-id="targetTask.id"
-								:project-id="targetTask.projectId"
-								@update:modelValue="handleAssigneesUpdated"
-							/>
+							<DropdownItem
+								icon="user-plus"
+								data-cy="context-menu-add-assignee"
+								@click="openAssigneeSubpanel('addAssignee')"
+							>
+								{{ $t('task.actions.addAssignee') }}
+							</DropdownItem>
+							<DropdownItem
+								icon="user-minus"
+								data-cy="context-menu-remove-assignee"
+								@click="openAssigneeSubpanel('removeAssignee')"
+							>
+								{{ $t('task.actions.removeAssignee') }}
+							</DropdownItem>
 						</div>
 					</div>
 
-					<!-- Subpanel: EditLabels -->
+					<!-- Subpanel: Add Assignee -->
+					<div
+						v-else-if="activeSubPanel === 'addAssignee'"
+						class="subpanel add-assignee-subpanel"
+					>
+						<div class="subpanel-header">
+							<BaseButton
+								class="is-small is-ghost"
+								@click="toggleSubPanel('assignees')"
+							>
+								&larr; {{ $t('misc.back') }}
+							</BaseButton>
+							<span class="subpanel-title">{{ $t('task.actions.addAssignee') }}</span>
+						</div>
+						<div class="subpanel-body">
+							<Multiselect
+								v-model="selectedAssignee"
+								:placeholder="$t('task.assignee.placeholder')"
+								:loading="isSearchingUsers"
+								:search-results="foundUsers"
+								label="name"
+								:select-placeholder="''"
+								@search="findUsers"
+								@update:modelValue="handleAddAssignee"
+							>
+								<template #searchResult="{option: user}">
+									<User
+										v-if="typeof user !== 'string'"
+										:avatar-size="24"
+										:show-username="true"
+										:user="user"
+									/>
+								</template>
+							</Multiselect>
+						</div>
+					</div>
+
+					<!-- Subpanel: Remove Assignee -->
+					<div
+						v-else-if="activeSubPanel === 'removeAssignee'"
+						class="subpanel remove-assignee-subpanel"
+					>
+						<div class="subpanel-header">
+							<BaseButton
+								class="is-small is-ghost"
+								@click="toggleSubPanel('assignees')"
+							>
+								&larr; {{ $t('misc.back') }}
+							</BaseButton>
+							<span class="subpanel-title">{{ $t('task.actions.removeAssignee') }}</span>
+						</div>
+						<div class="subpanel-body">
+							<Multiselect
+								v-model="selectedAssignee"
+								:placeholder="$t('task.assignee.placeholder')"
+								:loading="isSearchingUsers"
+								:search-results="foundUsers"
+								label="name"
+								:select-placeholder="''"
+								@search="findUsers"
+								@update:modelValue="handleRemoveAssignee"
+							>
+								<template #searchResult="{option: user}">
+									<User
+										v-if="typeof user !== 'string'"
+										:avatar-size="24"
+										:show-username="true"
+										:user="user"
+									/>
+								</template>
+							</Multiselect>
+						</div>
+					</div>
+
+					<!-- Subpanel: Labels Menu -->
 					<div
 						v-else-if="activeSubPanel === 'labels'"
 						class="subpanel labels-subpanel"
@@ -187,12 +270,96 @@
 							</BaseButton>
 						</div>
 						<div class="subpanel-body">
-							<EditLabels
-								:model-value="targetTask.labels"
-								:task-id="targetTask.id"
-								:creatable="true"
-								@update:modelValue="handleLabelsUpdated"
-							/>
+							<DropdownItem
+								icon="tag"
+								data-cy="context-menu-add-label"
+								@click="openLabelSubpanel('addLabel')"
+							>
+								{{ $t('task.actions.addLabel') }}
+							</DropdownItem>
+							<DropdownItem
+								icon="tag"
+								data-cy="context-menu-remove-label"
+								@click="openLabelSubpanel('removeLabel')"
+							>
+								{{ $t('task.actions.removeLabel') }}
+							</DropdownItem>
+						</div>
+					</div>
+
+					<!-- Subpanel: Add Label -->
+					<div
+						v-else-if="activeSubPanel === 'addLabel'"
+						class="subpanel add-label-subpanel"
+					>
+						<div class="subpanel-header">
+							<BaseButton
+								class="is-small is-ghost"
+								@click="toggleSubPanel('labels')"
+							>
+								&larr; {{ $t('misc.back') }}
+							</BaseButton>
+							<span class="subpanel-title">{{ $t('task.actions.addLabel') }}</span>
+						</div>
+						<div class="subpanel-body">
+							<Multiselect
+								v-model="selectedLabel"
+								:placeholder="$t('task.label.placeholder')"
+								:loading="labelStore.isLoading"
+								:search-results="foundLabels"
+								label="title"
+								:select-placeholder="''"
+								@search="findLabels"
+								@update:modelValue="handleAddLabel"
+							>
+								<template #searchResult="{option: label}">
+									<span
+										v-if="typeof label !== 'string'"
+										:style="getLabelStyles(label)"
+										class="tag search-result"
+									>
+										<span>{{ label.title }}</span>
+									</span>
+								</template>
+							</Multiselect>
+						</div>
+					</div>
+
+					<!-- Subpanel: Remove Label -->
+					<div
+						v-else-if="activeSubPanel === 'removeLabel'"
+						class="subpanel remove-label-subpanel"
+					>
+						<div class="subpanel-header">
+							<BaseButton
+								class="is-small is-ghost"
+								@click="toggleSubPanel('labels')"
+							>
+								&larr; {{ $t('misc.back') }}
+							</BaseButton>
+							<span class="subpanel-title">{{ $t('task.actions.removeLabel') }}</span>
+						</div>
+						<div class="subpanel-body">
+							<Multiselect
+								v-model="selectedLabel"
+								:placeholder="$t('task.label.placeholder')"
+								:loading="labelStore.isLoading"
+								:search-results="foundLabels"
+								label="title"
+								:select-placeholder="''"
+								@search="findLabels"
+								@update:modelValue="handleRemoveLabel"
+							>
+								<template #searchResult="{option: label}">
+									<span
+										v-if="typeof label !== 'string'"
+										:style="getLabelStyles(label)"
+										class="tag search-result"
+									>
+										<span>{{ label.title }}</span>
+									</span>
+								</template>
+							</Multiselect>
 						</div>
 					</div>
 
@@ -351,14 +518,17 @@ import BaseButton from '@/components/base/BaseButton.vue'
 import CustomTransition from '@/components/misc/CustomTransition.vue'
 import DropdownItem from '@/components/misc/DropdownItem.vue'
 import DatepickerInline from '@/components/input/DatepickerInline.vue'
-import EditAssignees from '@/components/tasks/partials/EditAssignees.vue'
-import EditLabels from '@/components/tasks/partials/EditLabels.vue'
 import Multiselect from '@/components/input/Multiselect.vue'
+import User from '@/components/misc/User.vue'
 
 import {useTaskContextMenu} from '@/composables/useTaskContextMenu'
 import {useTaskStore} from '@/stores/tasks'
+import {useLabelStore} from '@/stores/labels'
+import {useLabelStyles} from '@/composables/useLabelStyles'
 import TaskService from '@/services/task'
 import TaskModel from '@/models/task'
+import ProjectUserService from '@/services/projectUsers'
+import {getDisplayName} from '@/models/user'
 import TaskRelationService from '@/services/taskRelation'
 import TaskRelationModel from '@/models/taskRelation'
 import {RELATION_KINDS, RELATION_KIND, type IRelationKind} from '@/types/IRelationKind'
@@ -390,16 +560,34 @@ const emit = defineEmits<{
 
 const {t} = useI18n({useScope: 'global'})
 const taskStore = useTaskStore()
+const labelStore = useLabelStore()
+const {getLabelStyles} = useLabelStyles()
 
 const {
 	isOpen: composableIsOpen,
 	position: composablePosition,
 	activeTask: composableActiveTask,
 	closeContextMenu: composableClose,
+	isMultiSelectMode,
+	selectedTasks,
+	clearTaskSelection,
 } = useTaskContextMenu()
 
 const isMenuOpen = computed(() => props.isOpen ?? composableIsOpen.value)
 const targetTask = computed(() => props.task ?? composableActiveTask.value)
+
+const selectedTaskItems = computed(() => {
+	if (isMultiSelectMode.value && selectedTasks.value.length > 0) {
+		return selectedTasks.value
+	}
+	if (targetTask.value) {
+		return [targetTask.value]
+	}
+	return []
+})
+
+const isMulti = computed(() => selectedTaskItems.value.length > 1)
+
 const menuPosition = computed(() => {
 	if (props.x !== undefined && props.y !== undefined) {
 		return {x: props.x, y: props.y}
@@ -411,12 +599,103 @@ const menuRef = ref<HTMLElement | null>(null)
 const floatingStyle = ref<Record<string, string>>({})
 let cleanupFloating: (() => void) | null = null
 
-type SubPanelType = 'none' | 'editTitle' | 'dueDate' | 'assignees' | 'labels' | 'relations' | 'addRelation' | 'linkBlocker' | 'linkBlockedTask'
+type SubPanelType = 'none' | 'editTitle' | 'dueDate' | 'assignees' | 'addAssignee' | 'removeAssignee' | 'labels' | 'addLabel' | 'removeLabel' | 'relations' | 'addRelation' | 'linkBlocker' | 'linkBlockedTask'
 const activeSubPanel = ref<SubPanelType>('none')
 
 const editableTitle = ref('')
 const isSavingTitle = ref(false)
 const titleInputRef = ref<HTMLInputElement | null>(null)
+
+const selectedAssignee = ref<IUser | null>(null)
+const foundUsers = ref<IUser[]>([])
+const isSearchingUsers = ref(false)
+
+const selectedLabel = ref<ILabel | null>(null)
+const labelQuery = ref('')
+
+const foundLabels = computed(() => labelStore.filterLabelsByQuery([], labelQuery.value))
+
+function openAssigneeSubpanel(panel: 'addAssignee' | 'removeAssignee') {
+	selectedAssignee.value = null
+	foundUsers.value = []
+	findUsers('')
+	toggleSubPanel(panel)
+}
+
+async function findUsers(query = '') {
+	try {
+		isSearchingUsers.value = true
+		const projectUserService = new ProjectUserService()
+		const projectId = targetTask.value?.projectId ?? 0
+		const response = await projectUserService.getAll({projectId}, {s: query}) as IUser[]
+		foundUsers.value = response.map(u => {
+			u.name = getDisplayName(u)
+			return u
+		})
+	} catch (e) {
+		console.error('Failed to search users', e)
+	} finally {
+		isSearchingUsers.value = false
+	}
+}
+
+async function handleAddAssignee(user: IUser | null | string) {
+	if (!user || typeof user === 'string' || !user.id) return
+	try {
+		await Promise.all(selectedTaskItems.value.map(t => taskStore.addAssignee({user, taskId: t.id})))
+		selectedAssignee.value = null
+		toggleSubPanel('none')
+		close()
+	} catch (e) {
+		console.error('Failed to add assignee', e)
+	}
+}
+
+async function handleRemoveAssignee(user: IUser | null | string) {
+	if (!user || typeof user === 'string' || !user.id) return
+	try {
+		await Promise.all(selectedTaskItems.value.map(t => taskStore.removeAssignee({user, taskId: t.id})))
+		selectedAssignee.value = null
+		toggleSubPanel('none')
+		close()
+	} catch (e) {
+		console.error('Failed to remove assignee', e)
+	}
+}
+
+function openLabelSubpanel(panel: 'addLabel' | 'removeLabel') {
+	selectedLabel.value = null
+	labelQuery.value = ''
+	toggleSubPanel(panel)
+}
+
+function findLabels(query: string) {
+	labelQuery.value = query
+}
+
+async function handleAddLabel(label: ILabel | null | string) {
+	if (!label || typeof label === 'string' || !label.id) return
+	try {
+		await Promise.all(selectedTaskItems.value.map(t => taskStore.addLabel({label, taskId: t.id})))
+		selectedLabel.value = null
+		toggleSubPanel('none')
+		close()
+	} catch (e) {
+		console.error('Failed to add label', e)
+	}
+}
+
+async function handleRemoveLabel(label: ILabel | null | string) {
+	if (!label || typeof label === 'string' || !label.id) return
+	try {
+		await Promise.all(selectedTaskItems.value.map(t => taskStore.removeLabel({label, taskId: t.id})))
+		selectedLabel.value = null
+		toggleSubPanel('none')
+		close()
+	} catch (e) {
+		console.error('Failed to remove label', e)
+	}
+}
 
 const selectedRelationKind = ref<IRelationKind | null>(null)
 const selectedRelationTask = ref<ITask | null>(null)
@@ -553,13 +832,14 @@ function toggleSubPanel(panel: SubPanelType) {
 
 // 1. Mark Done / Undone
 async function toggleTaskDone() {
-	if (!targetTask.value) return
+	if (selectedTaskItems.value.length === 0) return
 	try {
-		const updated = await taskStore.update({
-			...targetTask.value,
-			done: !targetTask.value.done,
-		})
-		emit('taskUpdated', updated)
+		const markDone = selectedTaskItems.value.some(t => !t.done)
+		const updatedTasks = await Promise.all(selectedTaskItems.value.map(t => taskStore.update({
+			...t,
+			done: markDone,
+		})))
+		emit('taskUpdated', updatedTasks[0])
 		close()
 	} catch (e) {
 		console.error('Failed to toggle task done state', e)
@@ -597,13 +877,13 @@ async function saveTitle() {
 
 // 3. Due Date
 async function saveDueDate(newDate: Date | null) {
-	if (!targetTask.value) return
+	if (selectedTaskItems.value.length === 0) return
 	try {
-		const updated = await taskStore.update({
-			...targetTask.value,
+		const updatedTasks = await Promise.all(selectedTaskItems.value.map(t => taskStore.update({
+			...t,
 			dueDate: newDate,
-		})
-		emit('taskUpdated', updated)
+		})))
+		emit('taskUpdated', updatedTasks[0])
 		activeSubPanel.value = 'none'
 		close()
 	} catch (e) {
@@ -615,34 +895,21 @@ async function clearDueDate() {
 	await saveDueDate(null)
 }
 
-// 4. Assignees Updated
-function handleAssigneesUpdated(newAssignees: IUser[] | undefined) {
-	if (!targetTask.value) return
-	targetTask.value.assignees = newAssignees ?? []
-	emit('taskUpdated', targetTask.value)
-}
-
-// 5. Labels Updated
-function handleLabelsUpdated(newLabels: ILabel[]) {
-	if (!targetTask.value) return
-	targetTask.value.labels = newLabels
-	emit('taskUpdated', targetTask.value)
-}
-
-// 6. Delete Task
+// 4. Delete Task
 async function deleteTask() {
-	if (!targetTask.value) return
+	if (selectedTaskItems.value.length === 0) return
 	try {
-		const taskId = targetTask.value.id
-		await taskStore.delete(targetTask.value)
-		emit('taskDeleted', taskId)
+		const tasksToDelete = [...selectedTaskItems.value]
+		await Promise.all(tasksToDelete.map(t => taskStore.delete(t)))
+		emit('taskDeleted', tasksToDelete[0].id)
+		clearTaskSelection()
 		close()
 	} catch (e) {
 		console.error('Failed to delete task', e)
 	}
 }
 
-// 7. Relation Handlers
+// 5. Relation Handlers
 function getExistingRelatedTaskIds(task: ITask | null): Set<number> {
 	const ids = new Set<number>()
 	if (!task) return ids
@@ -698,23 +965,14 @@ async function findRelationTasks(query: string) {
 }
 
 async function saveRelation(otherTask: ITask | null | string, kind: IRelationKind) {
-	if (!targetTask.value || !otherTask || typeof otherTask === 'string' || !otherTask.id) return
+	if (!otherTask || typeof otherTask === 'string' || !otherTask.id) return
 	try {
 		const taskRelationService = new TaskRelationService()
-		await taskRelationService.create(new TaskRelationModel({
-			taskId: targetTask.value.id,
+		await Promise.all(selectedTaskItems.value.map(t => taskRelationService.create(new TaskRelationModel({
+			taskId: t.id,
 			otherTaskId: otherTask.id,
 			relationKind: kind,
-		}))
-		if (!targetTask.value.relatedTasks) {
-			targetTask.value.relatedTasks = {}
-		}
-		if (!targetTask.value.relatedTasks[kind]) {
-			targetTask.value.relatedTasks[kind] = []
-		}
-		targetTask.value.relatedTasks[kind]!.push(otherTask)
-		const updated = await taskStore.update(targetTask.value)
-		emit('taskUpdated', updated)
+		}))))
 		selectedRelationTask.value = null
 		foundRelationTasks.value = []
 		toggleSubPanel('none')

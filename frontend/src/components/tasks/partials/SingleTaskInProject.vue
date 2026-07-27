@@ -14,6 +14,17 @@
 			@contextmenu.prevent="openContextMenu($event, task)"
 		>
 			<span
+				v-if="isMultiSelectMode"
+				class="is-inline-flex is-align-items-center mie-2"
+			>
+				<FancyCheckbox
+					:model-value="isTaskSelected(task.id)"
+					:aria-label="$t('task.actions.multiSelect')"
+					@update:modelValue="toggleTaskSelection(task)"
+					@click.stop
+				/>
+			</span>
+			<span
 				v-tooltip="!canMarkAsDone ? $t('task.readOnlyCheckbox') : ''"
 				class="is-inline-flex is-align-items-center"
 			>
@@ -274,7 +285,7 @@ const emit = defineEmits<{
 	'taskUpdated': [task: ITask],
 }>()
 
-const {openContextMenu} = useTaskContextMenu()
+const {openContextMenu, isMultiSelectMode, isTaskSelected, toggleTaskSelection} = useTaskContextMenu()
 
 function getTaskById(taskId: number): ITask | undefined {
 	if (typeof props.allTasks === 'undefined' || props.allTasks.length === 0) {

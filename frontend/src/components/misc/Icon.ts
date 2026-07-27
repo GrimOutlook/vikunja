@@ -79,6 +79,7 @@ import {
 	faTrashAlt,
 	faUser,
 	faUserEdit,
+	faUserMinus,
 	faUserPlus,
 	faUsers,
 	faQuoteRight,
@@ -216,6 +217,7 @@ library.add(faRulerHorizontal)
 library.add(faUnderline)
 library.add(faFaceLaugh)
 library.add(faExclamation)
+library.add(faUserMinus)
 library.add(faArrowUpRightFromSquare)
 
 // overwriting the wrong types

@@ -964,7 +964,12 @@
       "more": "More options",
       "relations": "Relations",
       "linkBlocker": "Link blocker",
-      "linkBlockedTask": "Link blocked task"
+      "linkBlockedTask": "Link blocked task",
+      "multiSelect": "Select multiple tasks",
+      "addAssignee": "Add Assignee",
+      "removeAssignee": "Remove Assignee",
+      "addLabel": "Add Label",
+      "removeLabel": "Remove Label"
     },
     "new": "Create a task",
     "createSuccess": "The task was successfully created.",
