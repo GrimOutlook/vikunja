@@ -211,19 +211,52 @@
 						</div>
 						<div class="subpanel-body">
 							<DropdownItem
-								icon="lock"
-								data-cy="context-menu-link-blocker"
-								@click="toggleSubPanel('linkBlocker')"
+								v-for="rk in RELATION_KINDS"
+								:key="rk"
+								:data-cy="`context-menu-relation-${rk}`"
+								@click="openRelationTypeSubpanel(rk)"
 							>
-								{{ $t('task.relation.kinds.blocked', 1) }}
+								{{ $t(`task.relation.kinds.${rk}`, 1) }}
 							</DropdownItem>
-							<DropdownItem
-								icon="ban"
-								data-cy="context-menu-link-blocked"
-								@click="toggleSubPanel('linkBlockedTask')"
+						</div>
+					</div>
+
+					<!-- Subpanel: Add Relation -->
+					<div
+						v-else-if="activeSubPanel === 'addRelation' && selectedRelationKind"
+						class="subpanel add-relation-subpanel"
+					>
+						<div class="subpanel-header">
+							<BaseButton
+								class="is-small is-ghost"
+								@click="toggleSubPanel('relations')"
 							>
-								{{ $t('task.relation.kinds.blocking', 1) }}
-							</DropdownItem>
+								&larr; {{ $t('misc.back') }}
+							</BaseButton>
+							<span class="subpanel-title">{{ $t(`task.relation.kinds.${selectedRelationKind}`, 1) }}</span>
+						</div>
+						<div class="subpanel-body">
+							<Multiselect
+								v-model="selectedRelationTask"
+								:placeholder="$t('task.relation.searchPlaceholder')"
+								:select-placeholder="''"
+								:loading="isSearchingTasks"
+								:search-results="foundRelationTasks"
+								label="title"
+								@search="findRelationTasks"
+								@update:modelValue="(t) => saveRelation(t, selectedRelationKind!)"
+							>
+								<template #searchResult="{option: optTask}">
+									<span
+										v-if="typeof optTask !== 'string'"
+										class="search-result"
+										:class="{'is-strikethrough': optTask.done}"
+									>
+										{{ optTask.title }}
+									</span>
+									<span v-else>{{ optTask }}</span>
+								</template>
+							</Multiselect>
 						</div>
 					</div>
 
@@ -328,7 +361,7 @@ import TaskService from '@/services/task'
 import TaskModel from '@/models/task'
 import TaskRelationService from '@/services/taskRelation'
 import TaskRelationModel from '@/models/taskRelation'
-import {RELATION_KIND, type IRelationKind} from '@/types/IRelationKind'
+import {RELATION_KINDS, RELATION_KIND, type IRelationKind} from '@/types/IRelationKind'
 import type {ITask} from '@/modelTypes/ITask'
 import type {IUser} from '@/modelTypes/IUser'
 import type {ILabel} from '@/modelTypes/ILabel'
@@ -378,16 +411,24 @@ const menuRef = ref<HTMLElement | null>(null)
 const floatingStyle = ref<Record<string, string>>({})
 let cleanupFloating: (() => void) | null = null
 
-type SubPanelType = 'none' | 'editTitle' | 'dueDate' | 'assignees' | 'labels' | 'relations' | 'linkBlocker' | 'linkBlockedTask'
+type SubPanelType = 'none' | 'editTitle' | 'dueDate' | 'assignees' | 'labels' | 'relations' | 'addRelation' | 'linkBlocker' | 'linkBlockedTask'
 const activeSubPanel = ref<SubPanelType>('none')
 
 const editableTitle = ref('')
 const isSavingTitle = ref(false)
 const titleInputRef = ref<HTMLInputElement | null>(null)
 
+const selectedRelationKind = ref<IRelationKind | null>(null)
 const selectedRelationTask = ref<ITask | null>(null)
 const foundRelationTasks = ref<ITask[]>([])
 const isSearchingTasks = ref(false)
+
+function openRelationTypeSubpanel(kind: IRelationKind) {
+	selectedRelationKind.value = kind
+	selectedRelationTask.value = null
+	foundRelationTasks.value = []
+	toggleSubPanel('addRelation')
+}
 
 // Virtual Element position for floating-ui
 const virtualElement = computed<VirtualElement>(() => ({
@@ -499,7 +540,7 @@ function toggleSubPanel(panel: SubPanelType) {
 			nextTick(() => {
 				titleInputRef.value?.focus()
 			})
-		} else if (panel === 'relations' || panel === 'linkBlocker' || panel === 'linkBlockedTask') {
+		} else if (panel === 'relations' || panel === 'addRelation' || panel === 'linkBlocker' || panel === 'linkBlockedTask') {
 			ensureTargetTaskRelations()
 		}
 	}
