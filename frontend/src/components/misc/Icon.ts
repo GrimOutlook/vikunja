@@ -69,13 +69,16 @@ import {
 	faStar as faStarSolid,
 	faStop,
 	faTachometerAlt,
+	faTag,
 	faTags,
 	faTasks,
 	faTh,
 	faTimes,
+	faTrash,
 	faTrashAlt,
 	faUser,
 	faUserEdit,
+	faUserPlus,
 	faUsers,
 	faQuoteRight,
 	faListUl,
@@ -184,14 +187,17 @@ library.add(faStarSolid)
 library.add(faStop)
 library.add(faSun)
 library.add(faTachometerAlt)
+library.add(faTag)
 library.add(faTags)
 library.add(faTasks)
 library.add(faTh)
 library.add(faTimes)
 library.add(faTimesCircle)
+library.add(faTrash)
 library.add(faTrashAlt)
 library.add(faUser)
 library.add(faUserEdit)
+library.add(faUserPlus)
 library.add(faUsers)
 library.add(faArrowDownShortWide)
 library.add(faArrowUpFromBracket)
