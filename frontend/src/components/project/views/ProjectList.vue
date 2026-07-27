@@ -430,14 +430,15 @@ onBeforeUnmount(() => {
 }
 
 :deep(.tasks:not(.dragging-disabled) .single-task) {
-	cursor: grab;
 	-webkit-touch-callout: none;
 	user-select: none;
 	touch-action: manipulation;
+}
 
-	&:active {
-		cursor: grabbing;
-	}
+// Sortable only sets this once the drag actually begins, i.e. after the hold delay - a plain
+// click still shows the pointer cursor because clicking a task opens it.
+:deep(.tasks .sortable-chosen .single-task) {
+	cursor: grabbing;
 }
 
 .list-view {
