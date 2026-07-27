@@ -215,14 +215,14 @@
 								data-cy="context-menu-link-blocker"
 								@click="toggleSubPanel('linkBlocker')"
 							>
-								{{ $t('task.actions.linkBlocker') }}
+								{{ $t('task.relation.kinds.blocked', 1) }}
 							</DropdownItem>
 							<DropdownItem
 								icon="ban"
 								data-cy="context-menu-link-blocked"
 								@click="toggleSubPanel('linkBlockedTask')"
 							>
-								{{ $t('task.actions.linkBlockedTask') }}
+								{{ $t('task.relation.kinds.blocking', 1) }}
 							</DropdownItem>
 						</div>
 					</div>
