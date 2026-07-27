@@ -47,9 +47,9 @@ function getSentryConfig(env: Record<string, string>): SentryVitePluginOptions {
 		telemetry: false,
 
 		// sourcemaps: {
-			// assets: [], // TODO
-			// deleteFilesAfterUpload: [], // TODO define glob
-			// rewriteSources // might need that instead of `urlPrefix`
+		// assets: [], // TODO
+		// deleteFilesAfterUpload: [], // TODO define glob
+		// rewriteSources // might need that instead of `urlPrefix`
 		// },
 
 		release: {
@@ -83,6 +83,33 @@ function createFontMatcher(fontNames: string[]) {
 	// `/assets/OpenSans-Italic_wght__c9a8fe68-5f21f1e7.woff2`
 	// see: https://regex101.com/r/UgUWr1/1
 	return new RegExp(`^.+\\/(${fontNames.join('|')})_wght__[a-z1-9]{8}-[a-z1-9]{8}\\.woff2$`)
+}
+
+function i18nWatchPlugin(): PluginOption {
+	return {
+		name: 'vite-plugin-i18n-watch',
+		configureServer(server) {
+			const langDir = resolve(pathSrc, 'i18n/lang')
+			server.watcher.add(langDir)
+			server.watcher.on('change', (file) => {
+				if (file.includes('i18n/lang')) {
+					server.ws.send({
+						type: 'full-reload',
+						path: '*',
+					})
+				}
+			})
+		},
+		handleHotUpdate({file, server}) {
+			if (file.includes('i18n/lang')) {
+				server.ws.send({
+					type: 'full-reload',
+					path: '*',
+				})
+				return []
+			}
+		},
+	}
 }
 
 // https://vitejs.dev/config/
@@ -135,7 +162,7 @@ function getBuildConfig(env: Record<string, string>) {
 					postcssPresetEnv({
 						features: {
 							'logical-properties-and-values': false,
-						}
+						},
 					}),
 				],
 			},
@@ -153,8 +180,9 @@ function getBuildConfig(env: Record<string, string>) {
 				// Whether to install the full set of APIs, components, etc. provided by Vue I18n.
 				// By default, all of them will be installed.
 				fullInstall: true,
-				include: resolve(dirname(pathSrc), './src/i18n/lang/**'),
+				include: [resolve(pathSrc, 'i18n/lang/*.json'), resolve(pathSrc, 'i18n/lang/**')],
 			}),
+			i18nWatchPlugin(),
 			// https://github.com/Applelo/unplugin-inject-preload
 			UnpluginInjectPreload({
 				files: [{
