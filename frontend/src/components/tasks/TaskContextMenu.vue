@@ -244,6 +244,7 @@
 							<Multiselect
 								v-model="selectedRelationTask"
 								:placeholder="$t('task.relation.searchPlaceholder')"
+								:select-placeholder="''"
 								:loading="isSearchingTasks"
 								:search-results="foundRelationTasks"
 								label="title"
@@ -281,6 +282,7 @@
 							<Multiselect
 								v-model="selectedRelationTask"
 								:placeholder="$t('task.relation.searchPlaceholder')"
+								:select-placeholder="''"
 								:loading="isSearchingTasks"
 								:search-results="foundRelationTasks"
 								label="title"
@@ -609,7 +611,8 @@ async function findRelationTasks(query: string) {
 			s: query,
 			sort_by: 'done',
 		}) as ITask[]
-		foundRelationTasks.value = result.filter(t => t.id !== targetTask.value?.id)
+		const currentId = targetTask.value ? Number(targetTask.value.id) : 0
+		foundRelationTasks.value = result.filter(t => Number(t.id) !== currentId)
 	} catch (e) {
 		console.error('Failed to search tasks for relation', e)
 	} finally {
@@ -647,7 +650,18 @@ async function saveRelation(otherTask: ITask | null | string, kind: IRelationKin
 	box-shadow: 0 0.5em 1em -0.125em rgba(10, 10, 10, 0.15), 0 0 0 1px rgba(10, 10, 10, 0.05);
 	border-radius: $radius;
 	background-color: var(--scheme-main);
+	color: var(--text);
 	border: 1px solid var(--grey-200);
+
+	:deep(.search-result-button) {
+		color: var(--text);
+
+		&:hover,
+		&:focus {
+			background: var(--grey-100);
+			color: var(--text);
+		}
+	}
 
 	.dropdown-content {
 		padding: 0.25rem;
