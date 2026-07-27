@@ -762,6 +762,7 @@
     "savedFilters": "Saved filters"
   },
   "misc": {
+    "back": "Back",
     "loading": "Loading…",
     "save": "Save",
     "delete": "Delete",
