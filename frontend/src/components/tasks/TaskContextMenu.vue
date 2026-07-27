@@ -325,6 +325,7 @@ import Multiselect from '@/components/input/Multiselect.vue'
 import {useTaskContextMenu} from '@/composables/useTaskContextMenu'
 import {useTaskStore} from '@/stores/tasks'
 import TaskService from '@/services/task'
+import TaskModel from '@/models/task'
 import TaskRelationService from '@/services/taskRelation'
 import TaskRelationModel from '@/models/taskRelation'
 import {RELATION_KIND, type IRelationKind} from '@/types/IRelationKind'
@@ -498,6 +499,8 @@ function toggleSubPanel(panel: SubPanelType) {
 			nextTick(() => {
 				titleInputRef.value?.focus()
 			})
+		} else if (panel === 'relations' || panel === 'linkBlocker' || panel === 'linkBlockedTask') {
+			ensureTargetTaskRelations()
 		}
 	}
 	nextTick(() => {
@@ -599,6 +602,39 @@ async function deleteTask() {
 }
 
 // 7. Relation Handlers
+function getExistingRelatedTaskIds(task: ITask | null): Set<number> {
+	const ids = new Set<number>()
+	if (!task) return ids
+	if (task.id) {
+		ids.add(Number(task.id))
+	}
+	if (task.relatedTasks) {
+		Object.values(task.relatedTasks).forEach(taskList => {
+			if (Array.isArray(taskList)) {
+				taskList.forEach(relTask => {
+					if (relTask && relTask.id) {
+						ids.add(Number(relTask.id))
+					}
+				})
+			}
+		})
+	}
+	return ids
+}
+
+async function ensureTargetTaskRelations() {
+	if (!targetTask.value || !targetTask.value.id) return
+	try {
+		const taskService = new TaskService()
+		const fullTask = await taskService.get(new TaskModel({id: targetTask.value.id})) as ITask
+		if (fullTask && fullTask.relatedTasks) {
+			targetTask.value.relatedTasks = fullTask.relatedTasks
+		}
+	} catch (e) {
+		console.error('Failed to load task relations', e)
+	}
+}
+
 async function findRelationTasks(query: string) {
 	if (!query || query.trim() === '') {
 		foundRelationTasks.value = []
@@ -611,8 +647,8 @@ async function findRelationTasks(query: string) {
 			s: query,
 			sort_by: 'done',
 		}) as ITask[]
-		const currentId = targetTask.value ? Number(targetTask.value.id) : 0
-		foundRelationTasks.value = result.filter(t => Number(t.id) !== currentId)
+		const existingIds = getExistingRelatedTaskIds(targetTask.value)
+		foundRelationTasks.value = result.filter(t => !existingIds.has(Number(t.id)))
 	} catch (e) {
 		console.error('Failed to search tasks for relation', e)
 	} finally {
@@ -629,6 +665,13 @@ async function saveRelation(otherTask: ITask | null | string, kind: IRelationKin
 			otherTaskId: otherTask.id,
 			relationKind: kind,
 		}))
+		if (!targetTask.value.relatedTasks) {
+			targetTask.value.relatedTasks = {}
+		}
+		if (!targetTask.value.relatedTasks[kind]) {
+			targetTask.value.relatedTasks[kind] = []
+		}
+		targetTask.value.relatedTasks[kind]!.push(otherTask)
 		const updated = await taskStore.update(targetTask.value)
 		emit('taskUpdated', updated)
 		selectedRelationTask.value = null
