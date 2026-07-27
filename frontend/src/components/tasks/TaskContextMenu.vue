@@ -74,7 +74,7 @@
 						<!-- Action 7: Delete Task -->
 						<DropdownItem
 							icon="trash"
-							class="has-text-danger"
+							class="has-text-danger delete-menu-item"
 							data-cy="context-menu-delete"
 							@click="toggleSubPanel('confirmDelete')"
 						>
@@ -1101,6 +1101,12 @@ async function saveRelation(otherTask: ITask | null | string, kind: IRelationKin
 		box-shadow: none;
 	}
 
+	:deep(.delete-menu-item) {
+		border: 1px solid var(--danger, #f14668) !important;
+		border-radius: $radius;
+		margin-block-start: 0.25rem;
+	}
+
 	.subpanel {
 		padding: 0.5rem;
 
@@ -1136,6 +1142,7 @@ async function saveRelation(otherTask: ITask | null | string, kind: IRelationKin
 		.confirm-delete-button {
 			color: var(--danger, #f14668) !important;
 			border: 2px solid var(--danger, #f14668) !important;
+			border-radius: $radius !important;
 			font-weight: 700 !important;
 			background-color: transparent !important;
 
