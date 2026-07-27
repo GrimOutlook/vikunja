@@ -522,7 +522,7 @@
 							</p>
 							<div class="subpanel-actions confirm-delete-actions">
 								<BaseButton
-									class="is-small"
+									class="is-small confirm-cancel-button"
 									@click="toggleSubPanel('none')"
 								>
 									{{ $t('misc.cancel') }}
@@ -1139,6 +1139,10 @@ async function saveRelation(otherTask: ITask | null | string, kind: IRelationKin
 			margin-block-start: 1rem;
 			padding-block-start: 0.5rem;
 			border-block-start: 1px solid var(--grey-100);
+		}
+
+		.confirm-cancel-button {
+			padding: 0.4rem 0.85rem !important;
 		}
 
 		.confirm-delete-button {
