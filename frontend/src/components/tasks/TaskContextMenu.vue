@@ -642,7 +642,11 @@ async function findUsers(query = '') {
 async function handleAddAssignee(user: IUser | null | string) {
 	if (!user || typeof user === 'string' || !user.id) return
 	try {
-		await Promise.all(selectedTaskItems.value.map(t => taskStore.addAssignee({user, taskId: t.id})))
+		const tasksToUpdate = [...selectedTaskItems.value]
+		for (const t of tasksToUpdate) {
+			await taskStore.addAssignee({user, taskId: t.id})
+			emit('taskUpdated', t)
+		}
 		selectedAssignee.value = null
 		toggleSubPanel('none')
 		close()
@@ -654,7 +658,11 @@ async function handleAddAssignee(user: IUser | null | string) {
 async function handleRemoveAssignee(user: IUser | null | string) {
 	if (!user || typeof user === 'string' || !user.id) return
 	try {
-		await Promise.all(selectedTaskItems.value.map(t => taskStore.removeAssignee({user, taskId: t.id})))
+		const tasksToUpdate = [...selectedTaskItems.value]
+		for (const t of tasksToUpdate) {
+			await taskStore.removeAssignee({user, taskId: t.id})
+			emit('taskUpdated', t)
+		}
 		selectedAssignee.value = null
 		toggleSubPanel('none')
 		close()
@@ -676,7 +684,11 @@ function findLabels(query: string) {
 async function handleAddLabel(label: ILabel | null | string) {
 	if (!label || typeof label === 'string' || !label.id) return
 	try {
-		await Promise.all(selectedTaskItems.value.map(t => taskStore.addLabel({label, taskId: t.id})))
+		const tasksToUpdate = [...selectedTaskItems.value]
+		for (const t of tasksToUpdate) {
+			await taskStore.addLabel({label, taskId: t.id})
+			emit('taskUpdated', t)
+		}
 		selectedLabel.value = null
 		toggleSubPanel('none')
 		close()
@@ -688,7 +700,11 @@ async function handleAddLabel(label: ILabel | null | string) {
 async function handleRemoveLabel(label: ILabel | null | string) {
 	if (!label || typeof label === 'string' || !label.id) return
 	try {
-		await Promise.all(selectedTaskItems.value.map(t => taskStore.removeLabel({label, taskId: t.id})))
+		const tasksToUpdate = [...selectedTaskItems.value]
+		for (const t of tasksToUpdate) {
+			await taskStore.removeLabel({label, taskId: t.id})
+			emit('taskUpdated', t)
+		}
 		selectedLabel.value = null
 		toggleSubPanel('none')
 		close()
@@ -835,11 +851,14 @@ async function toggleTaskDone() {
 	if (selectedTaskItems.value.length === 0) return
 	try {
 		const markDone = selectedTaskItems.value.some(t => !t.done)
-		const updatedTasks = await Promise.all(selectedTaskItems.value.map(t => taskStore.update({
-			...t,
-			done: markDone,
-		})))
-		emit('taskUpdated', updatedTasks[0])
+		const tasksToUpdate = [...selectedTaskItems.value]
+		for (const t of tasksToUpdate) {
+			const updated = await taskStore.update({
+				...t,
+				done: markDone,
+			})
+			emit('taskUpdated', updated)
+		}
 		close()
 	} catch (e) {
 		console.error('Failed to toggle task done state', e)
@@ -879,12 +898,15 @@ async function saveTitle() {
 async function saveDueDate(newDate: Date | null) {
 	if (selectedTaskItems.value.length === 0) return
 	try {
-		const updatedTasks = await Promise.all(selectedTaskItems.value.map(t => taskStore.update({
-			...t,
-			dueDate: newDate,
-		})))
-		emit('taskUpdated', updatedTasks[0])
-		activeSubPanel.value = 'none'
+		const tasksToUpdate = [...selectedTaskItems.value]
+		for (const t of tasksToUpdate) {
+			const updated = await taskStore.update({
+				...t,
+				dueDate: newDate,
+			})
+			emit('taskUpdated', updated)
+		}
+		toggleSubPanel('none')
 		close()
 	} catch (e) {
 		console.error('Failed to save due date', e)
@@ -900,8 +922,11 @@ async function deleteTask() {
 	if (selectedTaskItems.value.length === 0) return
 	try {
 		const tasksToDelete = [...selectedTaskItems.value]
-		await Promise.all(tasksToDelete.map(t => taskStore.delete(t)))
-		emit('taskDeleted', tasksToDelete[0].id)
+		for (const t of tasksToDelete) {
+			const taskId = t.id
+			await taskStore.delete(t)
+			emit('taskDeleted', taskId)
+		}
 		clearTaskSelection()
 		close()
 	} catch (e) {
@@ -938,13 +963,17 @@ async function ensureTargetTaskRelations() {
 	if (selectedTaskItems.value.length === 0) return
 	try {
 		const taskService = new TaskService()
-		await Promise.all(selectedTaskItems.value.map(async t => {
-			if (!t.id) return
-			const fullTask = await taskService.get(new TaskModel({id: t.id})) as ITask
-			if (fullTask && fullTask.relatedTasks) {
-				t.relatedTasks = fullTask.relatedTasks
+		for (const t of selectedTaskItems.value) {
+			if (!t.id) continue
+			try {
+				const fullTask = await taskService.get(new TaskModel({id: t.id})) as ITask
+				if (fullTask && fullTask.relatedTasks) {
+					t.relatedTasks = fullTask.relatedTasks
+				}
+			} catch (e) {
+				console.error(`Failed to load relations for task ${t.id}`, e)
 			}
-		}))
+		}
 	} catch (e) {
 		console.error('Failed to load task relations', e)
 	}
@@ -973,27 +1002,32 @@ async function findRelationTasks(query: string) {
 
 async function saveRelation(otherTask: ITask | null | string, kind: IRelationKind) {
 	if (!otherTask || typeof otherTask === 'string' || !otherTask.id) return
+	const tasksToUpdate = [...selectedTaskItems.value]
+	if (tasksToUpdate.length === 0) return
+
 	try {
 		const taskRelationService = new TaskRelationService()
-		const updatedTasks = await Promise.all(selectedTaskItems.value.map(async (t) => {
-			await taskRelationService.create(new TaskRelationModel({
-				taskId: t.id,
-				otherTaskId: otherTask.id,
-				relationKind: kind,
-			}))
-			if (!t.relatedTasks) {
-				t.relatedTasks = {}
+		for (const t of tasksToUpdate) {
+			try {
+				await taskRelationService.create(new TaskRelationModel({
+					taskId: t.id,
+					otherTaskId: otherTask.id,
+					relationKind: kind,
+				}))
+				if (!t.relatedTasks) {
+					t.relatedTasks = {}
+				}
+				if (!t.relatedTasks[kind]) {
+					t.relatedTasks[kind] = []
+				}
+				if (!t.relatedTasks[kind]!.some(rel => rel.id === (otherTask as ITask).id)) {
+					t.relatedTasks[kind]!.push(otherTask as ITask)
+				}
+				const updated = await taskStore.update(t)
+				emit('taskUpdated', updated)
+			} catch (e) {
+				console.error(`Failed to create relation for task ${t.id}`, e)
 			}
-			if (!t.relatedTasks[kind]) {
-				t.relatedTasks[kind] = []
-			}
-			if (!t.relatedTasks[kind]!.some(rel => rel.id === (otherTask as ITask).id)) {
-				t.relatedTasks[kind]!.push(otherTask as ITask)
-			}
-			return await taskStore.update(t)
-		}))
-		if (updatedTasks.length > 0) {
-			emit('taskUpdated', updatedTasks[0])
 		}
 		selectedRelationTask.value = null
 		foundRelationTasks.value = []
