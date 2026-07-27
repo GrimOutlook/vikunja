@@ -970,7 +970,9 @@
       "addAssignee": "Add Assignee",
       "removeAssignee": "Remove Assignee",
       "addLabel": "Add Label",
-      "removeLabel": "Remove Label"
+      "removeLabel": "Remove Label",
+      "deleteConfirmSingle": "Are you sure you want to delete this task?",
+      "deleteConfirmMulti": "Are you sure you want to delete these tasks?"
     },
     "new": "Create a task",
     "createSuccess": "The task was successfully created.",

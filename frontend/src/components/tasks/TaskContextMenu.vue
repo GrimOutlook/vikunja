@@ -76,7 +76,7 @@
 							icon="trash"
 							class="has-text-danger"
 							data-cy="context-menu-delete"
-							@click="deleteTask"
+							@click="toggleSubPanel('confirmDelete')"
 						>
 							{{ $t('task.actions.delete') }}
 						</DropdownItem>
@@ -502,6 +502,41 @@
 							</Multiselect>
 						</div>
 					</div>
+
+					<!-- Subpanel: Confirm Delete -->
+					<div
+						v-else-if="activeSubPanel === 'confirmDelete'"
+						class="subpanel confirm-delete-panel"
+					>
+						<div class="subpanel-header">
+							<BaseButton
+								class="is-small is-ghost"
+								@click="toggleSubPanel('none')"
+							>
+								&larr; {{ $t('misc.back') }}
+							</BaseButton>
+						</div>
+						<div class="subpanel-body">
+							<p class="mb-3 font-semibold">
+								{{ isMulti ? $t('task.actions.deleteConfirmMulti') : $t('task.actions.deleteConfirmSingle') }}
+							</p>
+							<div class="subpanel-actions">
+								<BaseButton
+									class="is-small"
+									@click="toggleSubPanel('none')"
+								>
+									{{ $t('misc.cancel') }}
+								</BaseButton>
+								<BaseButton
+									class="is-small is-danger"
+									data-cy="context-menu-confirm-delete"
+									@click="deleteTask"
+								>
+									{{ $t('task.actions.delete') }}
+								</BaseButton>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</CustomTransition>
@@ -599,7 +634,7 @@ const menuRef = ref<HTMLElement | null>(null)
 const floatingStyle = ref<Record<string, string>>({})
 let cleanupFloating: (() => void) | null = null
 
-type SubPanelType = 'none' | 'editTitle' | 'dueDate' | 'assignees' | 'addAssignee' | 'removeAssignee' | 'labels' | 'addLabel' | 'removeLabel' | 'relations' | 'addRelation' | 'linkBlocker' | 'linkBlockedTask'
+type SubPanelType = 'none' | 'editTitle' | 'dueDate' | 'assignees' | 'addAssignee' | 'removeAssignee' | 'labels' | 'addLabel' | 'removeLabel' | 'relations' | 'addRelation' | 'linkBlocker' | 'linkBlockedTask' | 'confirmDelete'
 const activeSubPanel = ref<SubPanelType>('none')
 
 const editableTitle = ref('')
