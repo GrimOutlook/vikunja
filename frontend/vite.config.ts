@@ -93,6 +93,12 @@ function i18nWatchPlugin(): PluginOption {
 			server.watcher.add(langDir)
 			server.watcher.on('change', (file) => {
 				if (file.includes('i18n/lang')) {
+					const mods = server.moduleGraph.getModulesByFile(file)
+					if (mods) {
+						for (const mod of mods) {
+							server.moduleGraph.invalidateModule(mod)
+						}
+					}
 					server.ws.send({
 						type: 'full-reload',
 						path: '*',
@@ -102,11 +108,16 @@ function i18nWatchPlugin(): PluginOption {
 		},
 		handleHotUpdate({file, server}) {
 			if (file.includes('i18n/lang')) {
+				const mods = server.moduleGraph.getModulesByFile(file)
+				if (mods) {
+					for (const mod of mods) {
+						server.moduleGraph.invalidateModule(mod)
+					}
+				}
 				server.ws.send({
 					type: 'full-reload',
 					path: '*',
 				})
-				return []
 			}
 		},
 	}

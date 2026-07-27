@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"os"
 	"path"
 	"strings"
 	"sync"
@@ -84,9 +85,15 @@ var availableLanguages = map[string]bool{
 // Init initializes the global translator with translation files
 func Init() {
 	dir := "lang"
-	entries, err := fs.ReadDir(localeFS, dir)
+	var fsys fs.FS = localeFS
+
+	if stat, err := os.Stat("pkg/i18n/lang"); err == nil && stat.IsDir() {
+		fsys = os.DirFS("pkg/i18n")
+	}
+
+	entries, err := fs.ReadDir(fsys, dir)
 	if err != nil {
-		log.Fatalf("Failed to read embedded translation directory: %v", err)
+		log.Fatalf("Failed to read translation directory: %v", err)
 	}
 
 	for _, entry := range entries {
@@ -102,16 +109,16 @@ func Init() {
 
 		filePath := path.Join(dir, entry.Name())
 
-		err = translator.loadFile(localeFS, langCode, filePath)
+		err = translator.loadFile(fsys, langCode, filePath)
 		if err != nil {
 			log.Fatalf("Failed to load translation file %s: %v", filePath, err)
 		}
 	}
 }
 
-// loadFile loads a translation file for the specified language from the embedded filesystem
-func (t *Translator) loadFile(fs embed.FS, langCode, filePath string) error {
-	data, err := fs.ReadFile(filePath)
+// loadFile loads a translation file for the specified language
+func (t *Translator) loadFile(fsys fs.FS, langCode, filePath string) error {
+	data, err := fs.ReadFile(fsys, filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
