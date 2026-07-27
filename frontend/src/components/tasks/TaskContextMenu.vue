@@ -520,7 +520,7 @@
 							<p class="mb-3 font-semibold">
 								{{ isMulti ? $t('task.actions.deleteConfirmMulti') : $t('task.actions.deleteConfirmSingle') }}
 							</p>
-							<div class="subpanel-actions">
+							<div class="subpanel-actions confirm-delete-actions">
 								<BaseButton
 									class="is-small"
 									@click="toggleSubPanel('none')"
@@ -528,7 +528,7 @@
 									{{ $t('misc.cancel') }}
 								</BaseButton>
 								<BaseButton
-									class="is-small is-danger"
+									class="is-small confirm-delete-button"
 									data-cy="context-menu-confirm-delete"
 									@click="deleteTask"
 								>
@@ -1123,6 +1123,27 @@ async function saveRelation(otherTask: ITask | null | string, kind: IRelationKin
 			display: flex;
 			justify-content: flex-end;
 			gap: 0.5rem;
+		}
+
+		.confirm-delete-actions {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			gap: 1.5rem;
+			margin-block-start: 0.5rem;
+		}
+
+		.confirm-delete-button {
+			color: var(--danger, #f14668) !important;
+			border: 2px solid var(--danger, #f14668) !important;
+			font-weight: 700 !important;
+			background-color: transparent !important;
+
+			&:hover,
+			&:focus {
+				background-color: var(--danger, #f14668) !important;
+				color: #ffffff !important;
+			}
 		}
 	}
 }
