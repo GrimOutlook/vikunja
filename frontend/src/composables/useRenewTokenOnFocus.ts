@@ -56,7 +56,7 @@ export function useRenewTokenOnFocus() {
 
 	// Try renewing the token every time vikunja is loaded initially
 	// (When opening the browser the focus event is not fired)
-	authStore.renewToken()
+	authStore.renewToken().catch(() => {})
 
 	// Check if the token is still valid if the window gets focus again to maybe renew it.
 	// This handles the case where the laptop was suspended and the timer didn't fire.
@@ -85,7 +85,7 @@ export function useRenewTokenOnFocus() {
 
 		// If the token expires within the buffer window, refresh now.
 		if (expiresIn < REFRESH_BUFFER_SECONDS) {
-			authStore.renewToken()
+			authStore.renewToken().catch(() => {})
 		}
 	})
 }
