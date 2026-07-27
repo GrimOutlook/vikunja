@@ -966,6 +966,7 @@
       "linkBlocker": "Link blocker",
       "linkBlockedTask": "Link blocked task",
       "multiSelect": "Multiple Selection",
+      "clearSelections": "Clear selections",
       "addAssignee": "Add Assignee",
       "removeAssignee": "Remove Assignee",
       "addLabel": "Add Label",

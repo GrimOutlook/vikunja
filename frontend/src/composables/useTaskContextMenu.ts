@@ -11,7 +11,7 @@ const isOpen = ref<boolean>(false)
 const position = ref<ContextMenuPosition>({x: 0, y: 0})
 const activeTask = ref<ITask | null>(null)
 
-const isMultiSelectMode = ref<boolean>(false)
+const isMultiSelectMode = ref<boolean>(true)
 const selectedTasks = ref<ITask[]>([])
 
 export function useTaskContextMenu() {
