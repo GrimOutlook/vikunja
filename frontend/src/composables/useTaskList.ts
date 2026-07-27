@@ -12,6 +12,7 @@ import type {ITask} from '@/modelTypes/ITask'
 import {error} from '@/message'
 import type {IProject} from '@/modelTypes/IProject'
 import {useAuthStore} from '@/stores/auth'
+import {useTaskStore} from '@/stores/tasks'
 import {useViewFiltersStore} from '@/stores/viewFilters'
 import type {IProjectView} from '@/modelTypes/IProjectView'
 
@@ -256,6 +257,31 @@ export function useTaskList(
 
 		loadTasks()
 	}, { immediate: true })
+
+	const taskStore = useTaskStore()
+	watch(
+		() => taskStore.lastUpdatedTask,
+		(updatedTask) => {
+			if (!updatedTask) return
+			const index = tasks.value.findIndex(t => t.id === updatedTask.id)
+			if (index !== -1) {
+				tasks.value[index] = updatedTask
+				tasks.value = [...tasks.value]
+			}
+		},
+	)
+
+	watch(
+		() => taskStore.lastDeletedTaskId,
+		(deletedId) => {
+			if (!deletedId) return
+			const index = tasks.value.findIndex(t => t.id === deletedId)
+			if (index !== -1) {
+				tasks.value.splice(index, 1)
+				tasks.value = [...tasks.value]
+			}
+		},
+	)
 
 	return {
 		tasks,

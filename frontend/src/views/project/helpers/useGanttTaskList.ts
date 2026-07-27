@@ -81,6 +81,14 @@ export function useGanttTaskList<F extends Filters>(
 			}
 		},
 	)
+	watch(
+		() => taskStore.lastDeletedTaskId,
+		(deletedId) => {
+			if (deletedId && tasks.value.has(deletedId)) {
+				tasks.value.delete(deletedId)
+			}
+		},
+	)
 
 	async function addTask(task: Partial<ITask>) {
 		const newTask = await taskService.create(new TaskModel({...task}))

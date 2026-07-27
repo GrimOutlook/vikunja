@@ -172,6 +172,10 @@ watch(
 		const isFiltered = isSavedFilter({id: projectId.value})
 		tasks.value = ([...allTasks.value]).filter(t => shouldShowTaskInListView(t, allTasks.value, isFiltered))
 	},
+	{
+		deep: true,
+		immediate: true,
+	},
 )
 
 const isPositionSorting = computed(() => 'position' in sortByParam.value)
