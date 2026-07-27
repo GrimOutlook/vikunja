@@ -19,6 +19,11 @@
 				{{ $t('user.deletion.scheduledCancel') }}
 			</RouterLink>
 		</Message>
+		<TaskCountStats
+			v-if="projectStore.hasProjects"
+			:key="showTasksKey"
+			class="mbe-4"
+		/>
 		<AddTask
 			class="is-max-width-desktop"
 			@taskAdded="updateTaskKey"
@@ -55,6 +60,7 @@ import ShowTasks from '@/views/tasks/ShowTasks.vue'
 import ProjectCardGrid from '@/components/project/partials/ProjectCardGrid.vue'
 import AddTask from '@/components/tasks/AddTask.vue'
 import ImportHint from '@/components/home/ImportHint.vue'
+import TaskCountStats from '@/components/home/TaskCountStats.vue'
 
 import {getHistory} from '@/modules/projectHistory'
 import {parseDateOrNull} from '@/helpers/parseDateOrNull'

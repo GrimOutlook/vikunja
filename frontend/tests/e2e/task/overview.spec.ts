@@ -167,6 +167,20 @@ test.describe('Home Page Task Overview', () => {
 		await expect(page.locator('.home.app-content .content')).toContainText('Import your projects and tasks from other services into Vikunja:')
 	})
 
+	test('Should show the total number of open and completed tasks', async ({authenticatedPage: page}) => {
+		const project = (await ProjectFactory.create())[0]
+		await createDefaultViews(project.id)
+		await TaskFactory.create(5, {
+			project_id: project.id,
+			done: (i: number) => i > 3,
+		})
+
+		await page.goto('/')
+
+		await expect(page.locator('[data-cy="taskCountOpen"]')).toHaveText('3')
+		await expect(page.locator('[data-cy="taskCountDone"]')).toHaveText('2')
+	})
+
 	test('Should not show the cta buttons for new project when there are tasks', async ({authenticatedPage: page, apiContext}) => {
 		await seedTasks(apiContext)
 
