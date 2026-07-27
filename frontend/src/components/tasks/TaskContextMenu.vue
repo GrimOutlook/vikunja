@@ -910,34 +910,41 @@ async function deleteTask() {
 }
 
 // 5. Relation Handlers
-function getExistingRelatedTaskIds(task: ITask | null): Set<number> {
+function getExistingRelatedTaskIds(tasks: ITask[]): Set<number> {
 	const ids = new Set<number>()
-	if (!task) return ids
-	if (task.id) {
-		ids.add(Number(task.id))
-	}
-	if (task.relatedTasks) {
-		Object.values(task.relatedTasks).forEach(taskList => {
-			if (Array.isArray(taskList)) {
-				taskList.forEach(relTask => {
-					if (relTask && relTask.id) {
-						ids.add(Number(relTask.id))
-					}
-				})
-			}
-		})
-	}
+	if (!tasks || tasks.length === 0) return ids
+
+	tasks.forEach(task => {
+		if (task && task.id) {
+			ids.add(Number(task.id))
+		}
+		if (task && task.relatedTasks) {
+			Object.values(task.relatedTasks).forEach(taskList => {
+				if (Array.isArray(taskList)) {
+					taskList.forEach(relTask => {
+						if (relTask && relTask.id) {
+							ids.add(Number(relTask.id))
+						}
+					})
+				}
+			})
+		}
+	})
+
 	return ids
 }
 
 async function ensureTargetTaskRelations() {
-	if (!targetTask.value || !targetTask.value.id) return
+	if (selectedTaskItems.value.length === 0) return
 	try {
 		const taskService = new TaskService()
-		const fullTask = await taskService.get(new TaskModel({id: targetTask.value.id})) as ITask
-		if (fullTask && fullTask.relatedTasks) {
-			targetTask.value.relatedTasks = fullTask.relatedTasks
-		}
+		await Promise.all(selectedTaskItems.value.map(async t => {
+			if (!t.id) return
+			const fullTask = await taskService.get(new TaskModel({id: t.id})) as ITask
+			if (fullTask && fullTask.relatedTasks) {
+				t.relatedTasks = fullTask.relatedTasks
+			}
+		}))
 	} catch (e) {
 		console.error('Failed to load task relations', e)
 	}
@@ -955,7 +962,7 @@ async function findRelationTasks(query: string) {
 			s: query,
 			sort_by: 'done',
 		}) as ITask[]
-		const existingIds = getExistingRelatedTaskIds(targetTask.value)
+		const existingIds = getExistingRelatedTaskIds(selectedTaskItems.value)
 		foundRelationTasks.value = result.filter(t => !existingIds.has(Number(t.id)))
 	} catch (e) {
 		console.error('Failed to search tasks for relation', e)
