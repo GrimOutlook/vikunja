@@ -1135,8 +1135,10 @@ async function saveRelation(otherTask: ITask | null | string, kind: IRelationKin
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
-			gap: 1.5rem;
-			margin-block-start: 0.5rem;
+			gap: 1rem;
+			margin-block-start: 1rem;
+			padding-block-start: 0.5rem;
+			border-block-start: 1px solid var(--grey-100);
 		}
 
 		.confirm-delete-button {
