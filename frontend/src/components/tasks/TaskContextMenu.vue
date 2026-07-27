@@ -1143,7 +1143,7 @@ async function saveRelation(otherTask: ITask | null | string, kind: IRelationKin
 			color: var(--danger, #f14668) !important;
 			border: 2px solid var(--danger, #f14668) !important;
 			border-radius: $radius !important;
-			font-weight: 700 !important;
+			font-weight: 400 !important;
 			background-color: transparent !important;
 
 			&:hover,
