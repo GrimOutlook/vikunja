@@ -5,7 +5,7 @@
 	>
 		<div
 			ref="taskRoot"
-			:class="{'is-loading': taskService.loading}"
+			:class="{'is-loading': taskService.loading, 'is-selected': isMultiSelectMode && isTaskSelected(task.id)}"
 			class="task loader-container single-task"
 			tabindex="-1"
 			:data-is-overdue="isOverdue || undefined"
@@ -13,17 +13,6 @@
 			@keyup.enter="openTaskDetail"
 			@contextmenu.prevent="openContextMenu($event, task)"
 		>
-			<span
-				v-if="isMultiSelectMode"
-				class="is-inline-flex is-align-items-center mie-2"
-			>
-				<FancyCheckbox
-					:model-value="isTaskSelected(task.id)"
-					:aria-label="$t('task.actions.multiSelect')"
-					@update:modelValue="toggleTaskSelection(task)"
-					@click.stop
-				/>
-			</span>
 			<span
 				v-tooltip="!canMarkAsDone ? $t('task.readOnlyCheckbox') : ''"
 				class="is-inline-flex is-align-items-center"
@@ -427,6 +416,11 @@ function hasTextSelected() {
 }
 
 function openTaskDetail(event: MouseEvent | KeyboardEvent) {
+	if (isMultiSelectMode.value) {
+		toggleTaskSelection(task.value)
+		return
+	}
+
 	if (event.target instanceof HTMLElement) {
 		const isInteractiveElement = event.target.closest('a, button, label, input[type="checkbox"], .favorite, [role="button"]')
 		if (isInteractiveElement || hasTextSelected()) {
@@ -444,6 +438,10 @@ defineExpose({
 </script>
 
 <style lang="scss" scoped>
+.single-task.is-selected {
+	background-color: var(--primary-100, rgba(0, 95, 204, 0.15)) !important;
+	border-color: var(--primary) !important;
+}
 .task {
 	display: flex;
 	flex-wrap: wrap;
