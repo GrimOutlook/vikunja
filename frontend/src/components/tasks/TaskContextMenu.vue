@@ -482,7 +482,7 @@ async function deleteTask() {
 	padding: 0.25rem 0;
 	box-shadow: 0 0.5em 1em -0.125em rgba(10, 10, 10, 0.15), 0 0 0 1px rgba(10, 10, 10, 0.05);
 	border-radius: $radius;
-	background-color: var(--card-background);
+	background-color: var(--scheme-main);
 	border: 1px solid var(--grey-200);
 
 	.dropdown-content {
