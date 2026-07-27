@@ -960,7 +960,8 @@
       "markDone": "Mark as done",
       "markUndone": "Mark as undone",
       "editTitle": "Edit title",
-      "delete": "Delete task"
+      "delete": "Delete task",
+      "more": "More options"
     },
     "new": "Create a task",
     "createSuccess": "The task was successfully created.",

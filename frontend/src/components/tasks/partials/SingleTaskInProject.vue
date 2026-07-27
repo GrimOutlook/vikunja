@@ -192,6 +192,14 @@
 					:icon="['far', 'star']"
 				/>
 			</BaseButton>
+
+			<BaseButton
+				class="context-menu-trigger"
+				:aria-label="$t('task.actions.more')"
+				@click.stop="openContextMenu($event, task)"
+			>
+				<Icon icon="ellipsis-v" />
+			</BaseButton>
 			<slot />
 		</div>
 		<template v-if="typeof task.relatedTasks?.subtask !== 'undefined'">
@@ -523,13 +531,20 @@ defineExpose({
 		}
 	}
 
-	.favorite {
+	.favorite,
+	.context-menu-trigger {
 		opacity: 1;
 		text-align: center;
 		inline-size: 27px;
 		transition: opacity $transition, color $transition;
 		border-radius: $radius;
 
+		&:hover {
+			color: var(--grey-900);
+		}
+	}
+
+	.favorite {
 		&:hover {
 			color: var(--warning);
 		}
@@ -541,16 +556,19 @@ defineExpose({
 	}
 
 	@media(hover: hover) and (pointer: fine) {
-		& .favorite {
+		& .favorite,
+		& .context-menu-trigger {
 			opacity: 0;
 		}
 
-		&:hover .favorite {
+		&:hover .favorite,
+		&:hover .context-menu-trigger {
 			opacity: 1;
 		}
 	}
 
-	.favorite:focus {
+	.favorite:focus,
+	.context-menu-trigger:focus {
 		opacity: 1;
 	}
 

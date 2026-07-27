@@ -233,6 +233,7 @@
 									<th v-if="activeColumns.createdBy">
 										{{ $t('task.attributes.createdBy') }}
 									</th>
+									<th class="is-actions-column" />
 								</tr>
 							</thead>
 							<tbody>
@@ -343,6 +344,15 @@
 											:user="t.createdBy"
 										/>
 									</td>
+									<td class="is-actions-column">
+										<BaseButton
+											class="context-menu-trigger"
+											:aria-label="$t('task.actions.more')"
+											@click.stop="openContextMenu($event, t)"
+										>
+											<Icon icon="ellipsis-v" />
+										</BaseButton>
+									</td>
 								</tr>
 							</tbody>
 						</table>
@@ -363,6 +373,7 @@ import {computed, type Ref, watch} from 'vue'
 
 import {useStorage} from '@vueuse/core'
 
+import BaseButton from '@/components/base/BaseButton.vue'
 import ProjectWrapper from '@/components/project/ProjectWrapper.vue'
 import Done from '@/components/misc/Done.vue'
 import ProgressBar from '@/components/misc/ProgressBar.vue'
@@ -555,5 +566,28 @@ const taskDetailRoutes = computed(() => Object.fromEntries(
 
 .task-progress-percent {
 	white-space: nowrap;
+}
+
+.is-actions-column {
+	inline-size: 2rem;
+	text-align: center;
+}
+
+.context-menu-trigger {
+	opacity: 0;
+	transition: opacity $transition;
+	padding: 0 0.25rem;
+	border-radius: $radius;
+
+	&:hover,
+	&:focus {
+		opacity: 1;
+	}
+}
+
+@media(hover: hover) and (pointer: fine) {
+	tr:hover .context-menu-trigger {
+		opacity: 1;
+	}
 }
 </style>

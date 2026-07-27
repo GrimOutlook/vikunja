@@ -43,17 +43,26 @@
 						{{ task.position }}
 					</span>
 				</span>
-				<span
-					v-if="task.dueDate > 0"
-					v-tooltip="formatDateLong(task.dueDate)"
-					class="due-date"
-				>
-					<span class="icon">
-						<Icon :icon="['far', 'calendar-alt']" />
+				<span class="tw:flex tw:items-center tw:gap-1">
+					<span
+						v-if="task.dueDate > 0"
+						v-tooltip="formatDateLong(task.dueDate)"
+						class="due-date"
+					>
+						<span class="icon">
+							<Icon :icon="['far', 'calendar-alt']" />
+						</span>
+						<time :datetime="formatISO(task.dueDate)">
+							{{ formatDisplayDate(task.dueDate) }}
+						</time>
 					</span>
-					<time :datetime="formatISO(task.dueDate)">
-						{{ formatDisplayDate(task.dueDate) }}
-					</time>
+					<BaseButton
+						class="context-menu-trigger"
+						:aria-label="$t('task.actions.more')"
+						@click.stop="openContextMenu($event, task)"
+					>
+						<Icon icon="ellipsis-v" />
+					</BaseButton>
 				</span>
 			</div>
 			
@@ -145,6 +154,7 @@ import {useRouter} from 'vue-router'
 
 import {useGlobalNow} from '@/composables/useGlobalNow'
 
+import BaseButton from '@/components/base/BaseButton.vue'
 import PriorityLabel from '@/components/tasks/partials/PriorityLabel.vue'
 import ProgressBar from '@/components/misc/ProgressBar.vue'
 import Done from '@/components/misc/Done.vue'
@@ -364,6 +374,26 @@ $task-background: var(--white);
 		background: var(--grey-100);
 		border-radius: $radius;
 		padding: 0 .5rem;
+	}
+
+	.context-menu-trigger {
+		opacity: 0;
+		transition: opacity $transition;
+		padding: 0 0.25rem;
+		border-radius: $radius;
+		color: var(--grey-500);
+
+		&:hover,
+		&:focus {
+			opacity: 1;
+			color: var(--grey-900);
+		}
+	}
+
+	@media(hover: hover) and (pointer: fine) {
+		&:hover .context-menu-trigger {
+			opacity: 1;
+		}
 	}
 
 	.task-id, .project-title {
