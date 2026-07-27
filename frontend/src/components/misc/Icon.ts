@@ -10,6 +10,7 @@ import {
 	faArrowUpFromBracket,
 	faArrowUpRightFromSquare,
 	faArrowUpShortWide,
+	faBan,
 	faBold,
 	faItalic,
 	faStrikethrough,
@@ -129,6 +130,7 @@ library.add(faAngleLeft)
 library.add(faAngleRight)
 library.add(faArchive)
 library.add(faArrowLeft)
+library.add(faBan)
 library.add(faBars)
 library.add(faBell)
 library.add(faBellSlash)

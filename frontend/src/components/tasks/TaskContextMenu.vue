@@ -59,9 +59,18 @@
 							{{ $t('task.attributes.labels') }}
 						</DropdownItem>
 
+						<!-- Action 6: Relations -->
+						<DropdownItem
+							icon="link"
+							data-cy="context-menu-relations"
+							@click="toggleSubPanel('relations')"
+						>
+							{{ $t('task.actions.relations') }}
+						</DropdownItem>
+
 						<hr class="dropdown-divider">
 
-						<!-- Action 6: Delete Task -->
+						<!-- Action 7: Delete Task -->
 						<DropdownItem
 							icon="trash"
 							class="has-text-danger"
@@ -186,6 +195,111 @@
 							/>
 						</div>
 					</div>
+
+					<!-- Subpanel: Relations Menu -->
+					<div
+						v-else-if="activeSubPanel === 'relations'"
+						class="subpanel relations-subpanel"
+					>
+						<div class="subpanel-header">
+							<BaseButton
+								class="is-small is-ghost"
+								@click="toggleSubPanel('none')"
+							>
+								&larr; {{ $t('misc.back') }}
+							</BaseButton>
+						</div>
+						<div class="subpanel-body">
+							<DropdownItem
+								icon="lock"
+								data-cy="context-menu-link-blocker"
+								@click="toggleSubPanel('linkBlocker')"
+							>
+								{{ $t('task.actions.linkBlocker') }}
+							</DropdownItem>
+							<DropdownItem
+								icon="ban"
+								data-cy="context-menu-link-blocked"
+								@click="toggleSubPanel('linkBlockedTask')"
+							>
+								{{ $t('task.actions.linkBlockedTask') }}
+							</DropdownItem>
+						</div>
+					</div>
+
+					<!-- Subpanel: Link Blocker -->
+					<div
+						v-else-if="activeSubPanel === 'linkBlocker'"
+						class="subpanel link-blocker-subpanel"
+					>
+						<div class="subpanel-header">
+							<BaseButton
+								class="is-small is-ghost"
+								@click="toggleSubPanel('relations')"
+							>
+								&larr; {{ $t('misc.back') }}
+							</BaseButton>
+						</div>
+						<div class="subpanel-body">
+							<Multiselect
+								v-model="selectedRelationTask"
+								:placeholder="$t('task.relation.searchPlaceholder')"
+								:loading="isSearchingTasks"
+								:search-results="foundRelationTasks"
+								label="title"
+								@search="findRelationTasks"
+								@update:modelValue="(t) => saveRelation(t, RELATION_KIND.BLOCKED)"
+							>
+								<template #searchResult="{option: optTask}">
+									<span
+										v-if="typeof optTask !== 'string'"
+										class="search-result"
+										:class="{'is-strikethrough': optTask.done}"
+									>
+										{{ optTask.title }}
+									</span>
+									<span v-else>{{ optTask }}</span>
+								</template>
+							</Multiselect>
+						</div>
+					</div>
+
+					<!-- Subpanel: Link Blocked Task -->
+					<div
+						v-else-if="activeSubPanel === 'linkBlockedTask'"
+						class="subpanel link-blocked-subpanel"
+					>
+						<div class="subpanel-header">
+							<BaseButton
+								class="is-small is-ghost"
+								@click="toggleSubPanel('relations')"
+							>
+								&larr; {{ $t('misc.back') }}
+							</BaseButton>
+						</div>
+						<div class="subpanel-body">
+							<Multiselect
+								v-model="selectedRelationTask"
+								:placeholder="$t('task.relation.searchPlaceholder')"
+								:loading="isSearchingTasks"
+								:search-results="foundRelationTasks"
+								label="title"
+								@search="findRelationTasks"
+								@update:modelValue="(t) => saveRelation(t, RELATION_KIND.BLOCKING)"
+							>
+								<template #searchResult="{option: optTask}">
+									<span
+										v-if="typeof optTask !== 'string'"
+										class="search-result"
+										:class="{'is-strikethrough': optTask.done}"
+									>
+										{{ optTask.title }}
+									</span>
+									<span v-else>{{ optTask }}</span>
+								</template>
+							</Multiselect>
+						</div>
+					</div>
 				</div>
 			</div>
 		</CustomTransition>
@@ -204,9 +318,14 @@ import DropdownItem from '@/components/misc/DropdownItem.vue'
 import DatepickerInline from '@/components/input/DatepickerInline.vue'
 import EditAssignees from '@/components/tasks/partials/EditAssignees.vue'
 import EditLabels from '@/components/tasks/partials/EditLabels.vue'
+import Multiselect from '@/components/input/Multiselect.vue'
 
 import {useTaskContextMenu} from '@/composables/useTaskContextMenu'
 import {useTaskStore} from '@/stores/tasks'
+import TaskService from '@/services/task'
+import TaskRelationService from '@/services/taskRelation'
+import TaskRelationModel from '@/models/taskRelation'
+import {RELATION_KIND, type IRelationKind} from '@/types/IRelationKind'
 import type {ITask} from '@/modelTypes/ITask'
 import type {IUser} from '@/modelTypes/IUser'
 import type {ILabel} from '@/modelTypes/ILabel'
@@ -256,12 +375,16 @@ const menuRef = ref<HTMLElement | null>(null)
 const floatingStyle = ref<Record<string, string>>({})
 let cleanupFloating: (() => void) | null = null
 
-type SubPanelType = 'none' | 'editTitle' | 'dueDate' | 'assignees' | 'labels'
+type SubPanelType = 'none' | 'editTitle' | 'dueDate' | 'assignees' | 'labels' | 'relations' | 'linkBlocker' | 'linkBlockedTask'
 const activeSubPanel = ref<SubPanelType>('none')
 
 const editableTitle = ref('')
 const isSavingTitle = ref(false)
 const titleInputRef = ref<HTMLInputElement | null>(null)
+
+const selectedRelationTask = ref<ITask | null>(null)
+const foundRelationTasks = ref<ITask[]>([])
+const isSearchingTasks = ref(false)
 
 // Virtual Element position for floating-ui
 const virtualElement = computed<VirtualElement>(() => ({
@@ -470,6 +593,47 @@ async function deleteTask() {
 		close()
 	} catch (e) {
 		console.error('Failed to delete task', e)
+	}
+}
+
+// 7. Relation Handlers
+async function findRelationTasks(query: string) {
+	if (!query || query.trim() === '') {
+		foundRelationTasks.value = []
+		return
+	}
+	try {
+		isSearchingTasks.value = true
+		const taskService = new TaskService()
+		const result = await taskService.getAll({}, {
+			s: query,
+			sort_by: 'done',
+		}) as ITask[]
+		foundRelationTasks.value = result.filter(t => t.id !== targetTask.value?.id)
+	} catch (e) {
+		console.error('Failed to search tasks for relation', e)
+	} finally {
+		isSearchingTasks.value = false
+	}
+}
+
+async function saveRelation(otherTask: ITask | null | string, kind: IRelationKind) {
+	if (!targetTask.value || !otherTask || typeof otherTask === 'string' || !otherTask.id) return
+	try {
+		const taskRelationService = new TaskRelationService()
+		await taskRelationService.create(new TaskRelationModel({
+			taskId: targetTask.value.id,
+			otherTaskId: otherTask.id,
+			relationKind: kind,
+		}))
+		const updated = await taskStore.update(targetTask.value)
+		emit('taskUpdated', updated)
+		selectedRelationTask.value = null
+		foundRelationTasks.value = []
+		toggleSubPanel('none')
+		close()
+	} catch (e) {
+		console.error('Failed to create relation', e)
 	}
 }
 </script>
