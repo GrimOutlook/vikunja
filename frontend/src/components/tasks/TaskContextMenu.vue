@@ -532,7 +532,7 @@
 									data-cy="context-menu-confirm-delete"
 									@click="deleteTask"
 								>
-									{{ $t('task.actions.delete') }}
+									{{ $t('misc.delete') }}
 								</BaseButton>
 							</div>
 						</div>
