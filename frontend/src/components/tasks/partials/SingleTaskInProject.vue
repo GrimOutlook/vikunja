@@ -11,6 +11,7 @@
 			:data-is-overdue="isOverdue || undefined"
 			@click="openTaskDetail"
 			@keyup.enter="openTaskDetail"
+			@contextmenu.prevent="openContextMenu($event, task)"
 		>
 			<span
 				v-tooltip="!canMarkAsDone ? $t('task.readOnlyCheckbox') : ''"
@@ -244,6 +245,7 @@ import {playPopSound} from '@/helpers/playPop'
 import {isEditorContentEmpty} from '@/helpers/editorContentEmpty'
 import {TASK_REPEAT_MODES} from '@/types/IRepeatMode'
 import {useGlobalNow} from '@/composables/useGlobalNow'
+import {useTaskContextMenu} from '@/composables/useTaskContextMenu'
 
 const props = withDefaults(defineProps<{
 	theTask: ITask,
@@ -263,6 +265,8 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
 	'taskUpdated': [task: ITask],
 }>()
+
+const {openContextMenu} = useTaskContextMenu()
 
 function getTaskById(taskId: number): ITask | undefined {
 	if (typeof props.allTasks === 'undefined' || props.allTasks.length === 0) {

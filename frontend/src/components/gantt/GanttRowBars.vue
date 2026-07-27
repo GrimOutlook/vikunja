@@ -70,6 +70,7 @@
 				:aria-label="getBarAriaLabel(bar)"
 				:aria-pressed="isRowFocused"
 				@pointerdown="handleBarPointerDown(bar, $event)"
+				@contextmenu.prevent="handleContextMenu(bar, $event)"
 			/>
 
 			<!-- Parent summary bar (full height with diamond endpoints) -->
@@ -80,6 +81,7 @@
 				:aria-label="getBarAriaLabel(bar)"
 				:aria-pressed="isRowFocused"
 				@pointerdown="handleBarPointerDown(bar, $event)"
+				@contextmenu.prevent="handleContextMenu(bar, $event)"
 			>
 				<rect
 					:x="getBarX(bar)"
@@ -234,6 +236,8 @@ import type {GanttBarModel} from '@/composables/useGanttBar'
 import {getTextColor, LIGHT} from '@/helpers/color/getTextColor'
 import {MILLISECONDS_A_DAY} from '@/constants/date'
 import {roundToNaturalDayBoundary} from '@/helpers/time/roundToNaturalDayBoundary'
+import {useTaskContextMenu} from '@/composables/useTaskContextMenu'
+import type {ITask} from '@/modelTypes/ITask'
 
 import GanttBarPrimitive from './primitives/GanttBarPrimitive.vue'
 
@@ -268,6 +272,7 @@ const emit = defineEmits<{
 }>()
 
 const {t} = useI18n({useScope: 'global'})
+const {openContextMenu} = useTaskContextMenu()
 
 const RESIZE_HANDLE_OFFSET = 3
 
@@ -459,6 +464,12 @@ function getBarAriaLabel(bar: GanttBarModel): string {
 
 function handleBarPointerDown(bar: GanttBarModel, event: PointerEvent) {
 	emit('barPointerDown', bar, event)
+}
+
+function handleContextMenu(bar: GanttBarModel, event: MouseEvent) {
+	if (bar.meta?.task) {
+		openContextMenu(event, bar.meta.task as ITask)
+	}
 }
 
 function startResize(bar: GanttBarModel, edge: 'start' | 'end', event: PointerEvent) {

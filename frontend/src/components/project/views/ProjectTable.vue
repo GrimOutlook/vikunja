@@ -239,6 +239,7 @@
 								<tr
 									v-for="t in tasks"
 									:key="t.id"
+									@contextmenu.prevent="openContextMenu($event, t)"
 								>
 									<td v-if="activeColumns.index">
 										<RouterLink :to="taskDetailRoutes[t.id]">
@@ -386,6 +387,7 @@ import type {IProjectView} from '@/modelTypes/IProjectView'
 import { camelCase } from 'change-case'
 import {isSavedFilter} from '@/services/savedFilter'
 import {useProjectStore} from '@/stores/projects'
+import {useTaskContextMenu} from '@/composables/useTaskContextMenu'
 
 const props = defineProps<{
 	isLoadingProject: boolean,
@@ -394,6 +396,7 @@ const props = defineProps<{
 }>()
 
 const projectStore = useProjectStore()
+const {openContextMenu} = useTaskContextMenu()
 
 const ACTIVE_COLUMNS_DEFAULT = {
 	index: true,

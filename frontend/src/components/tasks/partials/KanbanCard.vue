@@ -14,6 +14,7 @@
 		@click.exact="openTaskDetail()"
 		@click.ctrl="() => toggleTaskDone(task)"
 		@click.meta="() => toggleTaskDone(task)"
+		@contextmenu.prevent="openContextMenu($event, task)"
 	>
 		<img
 			v-if="coverImageBlobUrl"
@@ -165,6 +166,7 @@ import {playPopSound} from '@/helpers/playPop'
 import {isEditorContentEmpty} from '@/helpers/editorContentEmpty'
 import {useProjectStore} from '@/stores/projects'
 import {TASK_REPEAT_MODES} from '@/types/IRepeatMode'
+import {useTaskContextMenu} from '@/composables/useTaskContextMenu'
 
 const props = withDefaults(defineProps<{
 	task: ITask,
@@ -177,6 +179,8 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
 	'taskCompletedRecurring': [task: ITask]
 }>()
+
+const {openContextMenu} = useTaskContextMenu()
 
 const router = useRouter()
 

@@ -79,6 +79,7 @@
 		</CustomTransition>
 
 		<slot v-if="!isLoadingProject" />
+		<TaskContextMenu />
 	</div>
 </template>
 
@@ -93,6 +94,7 @@ import DropdownItem from '@/components/misc/DropdownItem.vue'
 import Icon from '@/components/misc/Icon'
 import Message from '@/components/misc/Message.vue'
 import CustomTransition from '@/components/misc/CustomTransition.vue'
+import TaskContextMenu from '@/components/tasks/TaskContextMenu.vue'
 
 import {getProjectTitle} from '@/helpers/getProjectTitle'
 import {useTitle} from '@/composables/useTitle'

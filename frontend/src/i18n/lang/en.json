@@ -955,6 +955,12 @@
     }
   },
   "task": {
+    "actions": {
+      "markDone": "Mark as done",
+      "markUndone": "Mark as undone",
+      "editTitle": "Edit title",
+      "delete": "Delete task"
+    },
     "new": "Create a task",
     "createSuccess": "The task was successfully created.",
     "addReminder": "Add a reminder…",
