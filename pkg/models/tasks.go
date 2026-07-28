@@ -876,6 +876,64 @@ func calculateDefaultPosition(entityID int64, position float64) float64 {
 	return position
 }
 
+// manualKanbanViewsForProject returns the project's kanban views whose buckets
+// are filled manually - the only ones a task needs an explicit placement in.
+func manualKanbanViewsForProject(s *xorm.Session, projectID int64) (views []*ProjectView, err error) {
+	views = []*ProjectView{}
+	err = s.
+		Where("project_id = ? AND view_kind = ? AND bucket_configuration_mode = ?",
+			projectID, ProjectViewKindKanban, BucketConfigurationModeManual).
+		Find(&views)
+	return views, err
+}
+
+// placeTaskInProjectViews drops the bucket and position rows a task carries from
+// its previous project and places it in the done or default bucket of every view
+// passed in. Callers pass the views of the project the task now lives in.
+func placeTaskInProjectViews(s *xorm.Session, a web.Auth, t *Task, views []*ProjectView) (err error) {
+	_, err = s.Where("task_id = ?", t.ID).Delete(&TaskBucket{})
+	if err != nil {
+		return err
+	}
+	_, err = s.Where("task_id = ?", t.ID).Delete(&TaskPosition{})
+	if err != nil {
+		return err
+	}
+
+	for _, view := range views {
+		var bucketID = view.DoneBucketID
+		if bucketID == 0 || !t.Done {
+			bucketID, err = getDefaultBucketID(s, view)
+			if err != nil {
+				return err
+			}
+		}
+
+		tb := &TaskBucket{
+			BucketID:      bucketID,
+			TaskID:        t.ID,
+			ProjectViewID: view.ID,
+			ProjectID:     t.ProjectID,
+		}
+		err = updateTaskBucket(s, a, tb)
+		if err != nil {
+			return err
+		}
+
+		tp, err := calculateNewPositionForTask(s, a, t, view)
+		if err != nil {
+			return err
+		}
+
+		err = updateTaskPosition(s, a, tp)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func calculateNextTaskIndex(s *xorm.Session, projectID int64) (nextIndex int64, err error) {
 	latestTask := &Task{}
 	// Unscoped so an index is never reused while a soft-deleted task still holds it
@@ -1269,10 +1327,7 @@ func (t *Task) updateSingleTask(s *xorm.Session, a web.Auth, fields []string) (e
 
 	views := []*ProjectView{}
 	if t.Done != ot.Done || t.ProjectID != ot.ProjectID {
-		err = s.
-			Where("project_id = ? AND view_kind = ? AND bucket_configuration_mode = ?",
-				t.ProjectID, ProjectViewKindKanban, BucketConfigurationModeManual).
-			Find(&views)
+		views, err = manualKanbanViewsForProject(s, t.ProjectID)
 		if err != nil {
 			return
 		}
@@ -1280,44 +1335,8 @@ func (t *Task) updateSingleTask(s *xorm.Session, a web.Auth, fields []string) (e
 
 	// When a task was moved between projects, ensure it is in the correct bucket
 	if t.ProjectID != ot.ProjectID {
-		_, err = s.Where("task_id = ?", t.ID).Delete(&TaskBucket{})
-		if err != nil {
+		if err := placeTaskInProjectViews(s, a, t, views); err != nil {
 			return err
-		}
-		_, err = s.Where("task_id = ?", t.ID).Delete(&TaskPosition{})
-		if err != nil {
-			return err
-		}
-
-		for _, view := range views {
-			var bucketID = view.DoneBucketID
-			if bucketID == 0 || !t.Done {
-				bucketID, err = getDefaultBucketID(s, view)
-				if err != nil {
-					return err
-				}
-			}
-
-			tb := &TaskBucket{
-				BucketID:      bucketID,
-				TaskID:        t.ID,
-				ProjectViewID: view.ID,
-				ProjectID:     t.ProjectID,
-			}
-			err = updateTaskBucket(s, a, tb)
-			if err != nil {
-				return err
-			}
-
-			tp, err := calculateNewPositionForTask(s, a, t, view)
-			if err != nil {
-				return err
-			}
-
-			err = updateTaskPosition(s, a, tp)
-			if err != nil {
-				return err
-			}
 		}
 	}
 
