@@ -1,6 +1,7 @@
 import type {Page, APIRequestContext} from '@playwright/test'
 import {UserFactory} from '../factories/user'
 import {TEST_PASSWORD} from './constants'
+import {getApiUrl} from './apiUrl'
 
 /**
  * Sets up the API URL in the page's localStorage and window so the frontend
@@ -8,7 +9,7 @@ import {TEST_PASSWORD} from './constants'
  */
 export async function setupApiUrl(page: Page) {
 	// Use 127.0.0.1 instead of localhost to match the frontend's origin for CORS
-	const apiUrl = process.env.API_URL || 'http://127.0.0.1:3456/api/v1'
+	const apiUrl = getApiUrl()
 	await page.addInitScript(({apiUrl}) => {
 		window.localStorage.setItem('API_URL', apiUrl)
 		window.API_URL = apiUrl
@@ -45,6 +46,13 @@ export async function login(page: Page | null, apiContext: APIRequestContext, us
 		await page.addInitScript(({token}) => {
 			window.localStorage.setItem('token', token)
 		}, {token})
+
+		// The login response set the HttpOnly refresh token cookie on the api
+		// request context, which has its own cookie jar. Hand it to the browser as
+		// well: the app renews its token on every load, and without the cookie that
+		// refresh 401s and logs the user out mid-test.
+		const {cookies} = await apiContext.storageState()
+		await page.context().addCookies(cookies)
 	}
 
 	return {user, token}

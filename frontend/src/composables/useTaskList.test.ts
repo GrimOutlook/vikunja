@@ -3,6 +3,8 @@ import {defineComponent, h, nextTick} from 'vue'
 import {mount, flushPromises} from '@vue/test-utils'
 import {setActivePinia, createPinia} from 'pinia'
 import {createRouter, createMemoryHistory, type Router} from 'vue-router'
+import {createI18n} from 'vue-i18n'
+import en from '@/i18n/lang/en.json'
 
 const getAll = vi.fn(async () => [])
 vi.mock('@/services/taskCollection', async (importOriginal) => {
@@ -72,7 +74,11 @@ async function mountTaskList(query: Record<string, string>): Promise<Router> {
 		},
 	})
 
-	mount(TestComponent, {global: {plugins: [router]}})
+	// The base store calls useI18n() when pinia instantiates it, which needs a
+	// global i18n instance to be installed on the app.
+	const i18n = createI18n({legacy: false, locale: 'en', messages: {en}})
+
+	mount(TestComponent, {global: {plugins: [router, i18n]}})
 	await flushPromises()
 	await nextTick()
 	return router

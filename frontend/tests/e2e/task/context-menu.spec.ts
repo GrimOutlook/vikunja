@@ -1,4 +1,4 @@
-import {test, expect} from '../support/fixtures'
+import {test, expect} from '../../support/fixtures'
 import {ProjectFactory} from '../../factories/project'
 import {TaskFactory} from '../../factories/task'
 import {BucketFactory} from '../../factories/bucket'
@@ -128,14 +128,9 @@ test.describe('Task Context Menu', () => {
 		const contextMenu = page.locator('[data-cy="task-context-menu"]')
 		await expect(contextMenu).toBeVisible()
 
-		// Click Delete
+		// Click Delete, then confirm - the menu asks in a subpanel of its own
 		await contextMenu.locator('[data-cy="context-menu-delete"]').click()
-
-		// Confirm modal if triggered
-		const modal = page.locator('dialog[open]')
-		if (await modal.isVisible({timeout: 1000}).catch(() => false)) {
-			await modal.locator('.actions .button').filter({hasText: 'Do it!'}).click()
-		}
+		await contextMenu.locator('[data-cy="context-menu-confirm-delete"]').click()
 
 		// Context menu should close and task item removed from list
 		await expect(contextMenu).not.toBeVisible()

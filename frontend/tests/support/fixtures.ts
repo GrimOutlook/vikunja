@@ -1,6 +1,6 @@
 import {test as base, type APIRequestContext, type Page} from '@playwright/test'
 import {Factory} from './factory'
-import {login, createFakeUser} from './authenticateUser'
+import {login, createFakeUser, setupApiUrl} from './authenticateUser'
 
 export const test = base.extend<{
 	apiContext: APIRequestContext;
@@ -19,6 +19,14 @@ export const test = base.extend<{
 		await use(apiContext)
 		await apiContext.dispose()
 	}, {auto: true}],
+
+	// Every test needs the frontend pointed at the api under test, not just the
+	// authenticated ones: the build defaults to port 3456 while e2e runs the api
+	// on a random port, so without this the login page talks to nothing.
+	page: async ({page}, use) => {
+		await setupApiUrl(page)
+		await use(page)
+	},
 
 	currentUser: async ({apiContext}, use) => {
 		const user = await createFakeUser()
