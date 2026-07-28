@@ -20,8 +20,6 @@ import (
 	"strings"
 
 	"code.vikunja.io/api/pkg/user"
-	"code.vikunja.io/api/pkg/web"
-
 	"xorm.io/xorm"
 )
 
@@ -77,80 +75,6 @@ func deleteSubprojectTrackerTask(s *xorm.Session, subprojectID int64) error {
 	}
 
 	return hardDeleteTask(s, tracker)
-}
-
-// trackerTaskDoer returns the user a tracker task should be attributed to and
-// whose title template it uses. That is whoever is acting, except for a link
-// share - which has no user behind it, yet can hold enough permission to
-// reparent a project - where the project's owner stands in.
-func trackerTaskDoer(s *xorm.Session, project *Project, a web.Auth) (*user.User, error) {
-	doer, err := user.GetFromAuth(a)
-	if err == nil {
-		return doer, nil
-	}
-	if !user.IsErrMustNotBeLinkShare(err) {
-		return nil, err
-	}
-
-	return user.GetUserByID(s, project.OwnerID)
-}
-
-// moveSubprojectTrackerTask relocates an existing tracker task into newParentID,
-// giving it a free index and a bucket placement in that project's views. The task
-// itself is kept rather than recreated so anything the user added to it - a
-// custom title, comments, attachments - survives the move.
-func moveSubprojectTrackerTask(s *xorm.Session, a web.Auth, tracker *Task, newParentID int64) (err error) {
-	tracker.Index, err = calculateNextTaskIndex(s, newParentID)
-	if err != nil {
-		return err
-	}
-	tracker.ProjectID = newParentID
-	tracker.BucketID = 0
-
-	_, err = s.ID(tracker.ID).
-		Cols("project_id", "index", "bucket_id").
-		Update(tracker)
-	if err != nil {
-		return err
-	}
-
-	views, err := manualKanbanViewsForProject(s, newParentID)
-	if err != nil {
-		return err
-	}
-
-	return placeTaskInProjectViews(s, a, tracker, views)
-}
-
-// syncSubprojectTrackerForParentChange keeps a project's tracker task in step
-// with a reparenting: the task follows the project to its new parent, a project
-// that becomes a subproject gains one, and one detached to the top level loses
-// it. Callers must have verified the reparenting is allowed.
-func syncSubprojectTrackerForParentChange(s *xorm.Session, project *Project, a web.Auth) error {
-	if project.parentID() == 0 {
-		return deleteSubprojectTrackerTask(s, project.ID)
-	}
-
-	tracker := &Task{}
-	has, err := s.Where("tracked_project_id = ?", project.ID).Get(tracker)
-	if err != nil {
-		return err
-	}
-
-	if !has {
-		// The project was top-level until now, so it never got a tracker task.
-		doer, err := trackerTaskDoer(s, project, a)
-		if err != nil {
-			return err
-		}
-		return createSubprojectTrackerTask(s, project, doer)
-	}
-
-	if err := moveSubprojectTrackerTask(s, a, tracker, project.parentID()); err != nil {
-		return err
-	}
-
-	return syncTrackerTaskForSubproject(s, project.ID)
 }
 
 // calculateSubprojectProgress returns the number of subprojectID's non-deleted

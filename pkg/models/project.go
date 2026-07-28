@@ -1265,10 +1265,6 @@ func UpdateProject(s *xorm.Session, project *Project, auth web.Auth, updateProje
 		return
 	}
 
-	// Also drives the subproject tracker task update further down, which has to
-	// wait until the new parent is persisted.
-	parentChanged := false
-
 	// GHSA-2vq4-854f-5c72 / CVE-2026-35595 and GHSA-44v6-7fxq-vgf4 /
 	// CVE-2026-55064: the recursive permission CTE cascades Admin from any
 	// owned ancestor, so moving a shared child under an attacker-owned root
@@ -1285,8 +1281,6 @@ func UpdateProject(s *xorm.Session, project *Project, auth web.Auth, updateProje
 			return err
 		}
 		if *project.ParentProjectID != storedProject.parentID() {
-			parentChanged = true
-
 			canAdminMoved, err := project.IsAdmin(s, auth)
 			if err != nil {
 				return err
@@ -1378,12 +1372,6 @@ func UpdateProject(s *xorm.Session, project *Project, auth web.Auth, updateProje
 		Update(project)
 	if err != nil {
 		return err
-	}
-
-	if parentChanged {
-		if err := syncSubprojectTrackerForParentChange(s, project, auth); err != nil {
-			return err
-		}
 	}
 
 	events.DispatchOnCommit(s, &ProjectUpdatedEvent{
