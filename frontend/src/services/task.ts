@@ -7,7 +7,7 @@ import LabelService from './label'
 import {colorFromHex} from '@/helpers/color/colorFromHex'
 import {SECONDS_A_DAY, SECONDS_A_HOUR, SECONDS_A_WEEK} from '@/constants/date'
 import {objectToSnakeCase} from '@/helpers/case'
-import {AuthenticatedHTTPFactory} from '@/helpers/fetcher'
+import {AuthenticatedHTTPFactory, apiV2Url} from '@/helpers/fetcher'
 
 const parseDate = date => {
 	if (date) {
@@ -120,6 +120,27 @@ export default class TaskService extends AbstractService<ITask> {
 		})
 
 		return transformed as ITask
+	}
+
+	/**
+	 * Returns the number of tasks matching the filter across all projects the user has access to.
+	 */
+	async countAll(filter: string): Promise<number> {
+		const cancel = this.setLoading()
+
+		try {
+			// v2 reports the total number of matches in its pagination envelope, so the
+			// smallest possible page is enough - the tasks themselves are never used.
+			const {data} = await AuthenticatedHTTPFactory().get<{total: number}>(apiV2Url('tasks'), {
+				params: {
+					filter,
+					per_page: 1,
+				},
+			})
+			return data.total
+		} finally {
+			cancel()
+		}
 	}
 
 	async markTaskAsRead(taskId: ITask['id']): Promise<void> {
