@@ -416,7 +416,8 @@ function hasTextSelected() {
 }
 
 function openTaskDetail(event: MouseEvent | KeyboardEvent) {
-	if (isMultiSelectMode.value) {
+	// Multi-select is a modifier-click: a plain click always opens the task.
+	if (isMultiSelectMode.value && (event.ctrlKey || event.metaKey)) {
 		toggleTaskSelection(task.value)
 		return
 	}

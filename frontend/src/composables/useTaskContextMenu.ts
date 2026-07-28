@@ -41,8 +41,16 @@ export function useTaskContextMenu() {
 		e.stopPropagation()
 		activeTask.value = task
 
-		if (isMultiSelectMode.value && !isTaskSelected(task.id) && selectedTasks.value.length === 0) {
+		if (isMultiSelectMode.value && selectedTasks.value.length === 0) {
 			selectedTasks.value = [task]
+		} else {
+			// Replace the stored copy with the one just clicked. Acting on a task
+			// through the menu (marking it done, say) leaves the list holding a new
+			// object, so a kept selection would otherwise act on stale state.
+			const index = selectedTasks.value.findIndex(t => t.id === task.id)
+			if (index !== -1) {
+				selectedTasks.value.splice(index, 1, task)
+			}
 		}
 
 		position.value = {x: e.clientX, y: e.clientY}
